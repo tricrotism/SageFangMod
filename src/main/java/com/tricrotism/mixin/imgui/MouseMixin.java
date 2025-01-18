@@ -1,4 +1,4 @@
-package com.mchub.infooverlay.mixin.imgui;
+package com.tricrotism.mixin.imgui;
 
 import imgui.ImGui;
 import net.minecraft.client.Mouse;

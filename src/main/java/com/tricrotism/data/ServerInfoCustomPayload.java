@@ -1,4 +1,4 @@
-package com.mchub.infooverlay.data;
+package com.tricrotism.data;
 
 import com.google.gson.Gson;
 import net.minecraft.network.PacketByteBuf;

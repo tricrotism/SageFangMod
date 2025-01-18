@@ -1,6 +1,6 @@
-package com.mchub.infooverlay.mixin.imgui;
+package com.tricrotism.mixin.imgui;
 
-import com.mchub.infooverlay.imgui.ImGuiImpl;
+import com.tricrotism.imgui.ImGuiImpl;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
 import net.minecraft.client.util.Window;

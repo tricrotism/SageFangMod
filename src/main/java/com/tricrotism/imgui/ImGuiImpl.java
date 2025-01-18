@@ -2,7 +2,7 @@
  * This file is part of fabric-imgui-example-mod - https://github.com/FlorianMichael/fabric-imgui-example-mod
  * by FlorianMichael/EnZaXD and contributors
  */
-package com.mchub.infooverlay.imgui;
+package com.tricrotism.imgui;
 
 import imgui.ImGui;
 import imgui.ImGuiIO;

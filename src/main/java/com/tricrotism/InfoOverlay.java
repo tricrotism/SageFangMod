@@ -1,7 +1,7 @@
-package com.mchub.infooverlay;
+package com.tricrotism;
 
-import com.mchub.infooverlay.data.ServerInfo;
-import com.mchub.infooverlay.data.ServerInfoCustomPayload;
+import com.tricrotism.data.ServerInfo;
+import com.tricrotism.data.ServerInfoCustomPayload;
 import imgui.ImGui;
 import imgui.flag.ImGuiWindowFlags;
 import net.fabricmc.api.ModInitializer;

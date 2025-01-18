@@ -1,4 +1,4 @@
-package com.mchub.infooverlay.data;
+package com.tricrotism.data;
 
 public class ServerInfo {
     private final String instance;

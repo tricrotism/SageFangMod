@@ -1,7 +1,7 @@
-package com.mchub.infooverlay.mixin.imgui;
+package com.tricrotism.mixin.imgui;
 
-import com.mchub.infooverlay.InfoOverlay;
-import com.mchub.infooverlay.imgui.ImGuiImpl;
+import com.tricrotism.InfoOverlay;
+import com.tricrotism.imgui.ImGuiImpl;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.profiler.Profilers;

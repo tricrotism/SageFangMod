@@ -1,17 +1,18 @@
 {
     "schemaVersion": 1,
-    "id": "modid",
+    "id": "sagefang",
     "version": "${version}",
-    "name": "Info Overlay",
-    "description": "Shows a nice info overlay on mchub.com.",
+    "name": "SageFang",
+    "description": "A mod that adds an overlay for random stuff I need",
     "authors": [
+        "tricrotism",
         "Antonio32A"
     ],
-    "icon": "assets/modid/icon.png",
+    "icon": "assets/modid/icon.jpg",
     "environment": "*",
     "entrypoints": {
         "main": [
-            "com.mchub.infooverlay.InfoOverlay"
+          "com.tricrotism.InfoOverlay"
         ]
     },
     "mixins": [
