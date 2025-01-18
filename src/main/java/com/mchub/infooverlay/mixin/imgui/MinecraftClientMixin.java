@@ -1,6 +1,6 @@
-package de.florianmichael.imguiexample.mixin.imgui;
+package com.mchub.infooverlay.mixin.imgui;
 
-import de.florianmichael.imguiexample.imgui.ImGuiImpl;
+import com.mchub.infooverlay.imgui.ImGuiImpl;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
 import net.minecraft.client.util.Window;
@@ -20,12 +20,12 @@ public class MinecraftClientMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     public void initImGui(RunArgs args, CallbackInfo ci) {
-        ImGuiImpl.create(window.getHandle());
+        ImGuiImpl.INSTANCE.create(window.getHandle());
     }
 
     @Inject(method = "close", at = @At("RETURN"))
     public void closeImGui(CallbackInfo ci) {
-        ImGuiImpl.dispose();
+        ImGuiImpl.INSTANCE.dispose();
     }
 
 }
