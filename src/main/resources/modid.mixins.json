@@ -9,7 +9,7 @@
     "imgui.KeyboardMixin",
     "imgui.MinecraftClientMixin",
     "imgui.MouseMixin",
-    "imgui.RenderSystemMixin"
+    "imgui.WindowMixin"
   ],
   "injectors": {
     "defaultRequire": 1
