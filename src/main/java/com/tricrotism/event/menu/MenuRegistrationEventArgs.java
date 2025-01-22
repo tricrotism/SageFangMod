@@ -10,7 +10,7 @@ import java.util.List;
 public class MenuRegistrationEventArgs {
     private final List<Menu> menus = new ArrayList<>();
 
-    public void register(Menu menu){
+    public void register(Menu menu) {
         menus.add(menu);
     }
 

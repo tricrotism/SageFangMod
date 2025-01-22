@@ -1,35 +1,41 @@
 package com.tricrotism.data;
 
 import com.google.gson.Gson;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import org.jetbrains.annotations.NotNull;
 
-public class ServerInfoCustomPayload implements CustomPayload {
-    public static final CustomPayload.Id<ServerInfoCustomPayload> ID = CustomPayload.id("custom/server_info");
-    public static final PacketCodec<PacketByteBuf, ServerInfoCustomPayload> CODEC = CustomPayload.codecOf(
-        ServerInfoCustomPayload::write, ServerInfoCustomPayload::new
-    );
+public class ServerInfoCustomPayload implements CustomPacketPayload {
+    public static final Type<ServerInfoCustomPayload> ID = CustomPacketPayload.createType("custom/server_info");
+    public static final StreamCodec<FriendlyByteBuf, ServerInfoCustomPayload> CODEC = new StreamCodec<>() {
+        @Override
+        public void encode(FriendlyByteBuf buf, ServerInfoCustomPayload payload) {
+            payload.write(buf);
+        }
+
+        @Override
+        public @NotNull ServerInfoCustomPayload decode(FriendlyByteBuf buf) {
+            String json = new String(buf.readByteArray());
+            ServerInfo serverInfo = GSON.fromJson(json, ServerInfo.class);
+            return new ServerInfoCustomPayload(serverInfo);
+        }
+    };
 
     private static final Gson GSON = new Gson();
-
     private final ServerInfo serverInfo;
 
-    public ServerInfoCustomPayload(PacketByteBuf buf) {
-        this.serverInfo = GSON.fromJson(new String(buf.readByteArray()), ServerInfo.class);
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return ID;
+    }
+
+    public void write(FriendlyByteBuf buf) {
+        buf.writeBytes(GSON.toJson(serverInfo).getBytes());
     }
 
     public ServerInfoCustomPayload(ServerInfo serverInfo) {
         this.serverInfo = serverInfo;
-    }
-
-    @Override
-    public Id<? extends CustomPayload> getId() {
-        return ID;
-    }
-
-    public void write(PacketByteBuf buf) {
-        buf.writeBytes(GSON.toJson(serverInfo).getBytes());
     }
 
     public ServerInfo getServerInfo() {

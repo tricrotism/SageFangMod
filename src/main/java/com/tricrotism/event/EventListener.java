@@ -1,6 +1,6 @@
 package com.tricrotism.event;
 
 @FunctionalInterface
-public interface EventListener<A>{
+public interface EventListener<A> {
     void invoke(A eventArgs);
 }
