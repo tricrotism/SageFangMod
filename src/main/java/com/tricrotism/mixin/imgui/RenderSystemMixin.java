@@ -22,9 +22,7 @@ public class RenderSystemMixin {
 
         MenuRegistrationEventArgs eventArgs = new MenuRegistrationEventArgs();
         MenuRegistrationEvent.INSTANCE.invoke(eventArgs);
-        for (Menu menu : eventArgs.getMenus()) {
-            ImGuiUtil.INSTANCE.draw(menu);
-        }
+        ImGuiUtil.INSTANCE.draw(eventArgs.getMenus());
 
         profiler.pop();
     }

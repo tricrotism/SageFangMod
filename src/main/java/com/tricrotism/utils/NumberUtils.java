@@ -12,24 +12,6 @@ public class NumberUtils {
         DOUBLE_FORMAT.setMaximumFractionDigits(2);
     }
 
-    public static long round(double value, int places) {
-        if (places < 0) throw new IllegalArgumentException("places must be >= 0");
-
-        long factor = (long) Math.pow(10, places);
-        value = value * factor;
-        long tmp = Math.round(value);
-        return tmp / factor;
-    }
-
-    public static float round(float value, int places) {
-        if (places < 0) throw new IllegalArgumentException("places must be >= 0");
-
-        long factor = (long) Math.pow(10, places);
-        value = value * factor;
-        long tmp = Math.round(value);
-        return (float) (tmp / factor);
-    }
-
     public static String format(double d) {
         return DOUBLE_FORMAT.format(d);
     }

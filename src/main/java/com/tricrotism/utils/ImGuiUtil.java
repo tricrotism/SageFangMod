@@ -9,6 +9,8 @@ import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.List;
+
 public class ImGuiUtil {
 
     public static final ImGuiUtil INSTANCE = new ImGuiUtil();
@@ -29,12 +31,14 @@ public class ImGuiUtil {
         imGuiGl3.init();
     }
 
-    public void draw(final Menu menu) {
+    public void draw(final List<Menu> menu) {
         imGuiGl3.newFrame();
         imGuiGlfw.newFrame();
         ImGui.newFrame();
 
-        menu.frame(ImGui.getIO());
+        for (Menu m : menu) {
+            m.frame(ImGui.getIO());
+        }
 
         ImGui.render();
         imGuiGl3.renderDrawData(ImGui.getDrawData());
