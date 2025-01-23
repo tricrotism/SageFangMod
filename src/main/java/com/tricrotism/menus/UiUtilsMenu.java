@@ -17,6 +17,8 @@ public class UiUtilsMenu implements Menu {
 
         ImGui.setNextWindowBgAlpha(0.45f);
         ImGui.begin("Ui Utils Menu", flags);
+        ImGui.text("Ui Utils");
+        ImGui.beginTabBar("Ui Utils");
 
         ImGui.text("Bypass Server Resource Pack");
         ImGui.sameLine();
@@ -54,6 +56,7 @@ public class UiUtilsMenu implements Menu {
             SharedVariables.shouldForceWakeUp = !SharedVariables.shouldForceWakeUp;
         }
 
+        ImGui.endTabBar();
         ImGui.end();
     }
 }

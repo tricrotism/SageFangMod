@@ -1,5 +1,6 @@
 package com.tricrotism.utils;
 
+import com.tricrotism.Main;
 import com.tricrotism.Menu;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -32,23 +33,27 @@ public class ImGuiUtil {
     }
 
     public void draw(final List<Menu> menu) {
-        imGuiGl3.newFrame();
-        imGuiGlfw.newFrame();
-        ImGui.newFrame();
+        try {
+            imGuiGl3.newFrame();
+            imGuiGlfw.newFrame();
+            ImGui.newFrame();
 
-        for (Menu m : menu) {
-            m.frame(ImGui.getIO());
-        }
+            for (Menu m : menu) {
+                m.frame(ImGui.getIO());
+            }
 
-        ImGui.render();
-        imGuiGl3.renderDrawData(ImGui.getDrawData());
+            ImGui.render();
+            imGuiGl3.renderDrawData(ImGui.getDrawData());
 
-        if (ImGui.getIO().hasConfigFlags(ImGuiConfigFlags.ViewportsEnable)) {
-            final long pointer = GLFW.glfwGetCurrentContext();
-            ImGui.updatePlatformWindows();
-            ImGui.renderPlatformWindowsDefault();
+            if (ImGui.getIO().hasConfigFlags(ImGuiConfigFlags.ViewportsEnable)) {
+                final long pointer = GLFW.glfwGetCurrentContext();
+                ImGui.updatePlatformWindows();
+                ImGui.renderPlatformWindowsDefault();
 
-            GLFW.glfwMakeContextCurrent(pointer);
+                GLFW.glfwMakeContextCurrent(pointer);
+            }
+        } catch (Exception e) {
+            Main.LOGGER.error("Error drawing ImGui for " + menu.getClass().getSimpleName(), e);
         }
     }
 

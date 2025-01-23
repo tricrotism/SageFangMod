@@ -21,9 +21,12 @@ public class ServerInfoMenu implements Menu {
 
         ImGui.setNextWindowBgAlpha(0.45f);
         ImGui.begin("Server Info Menu", flags);
+        ImGui.text("Server Info");
+        ImGui.beginTabBar("Server Info");
 
         if (lastServerInfo == null) {
             ImGui.text("No server info");
+            ImGui.endTabBar();
             ImGui.end();
             return;
         }
@@ -36,7 +39,9 @@ public class ServerInfoMenu implements Menu {
         ImGui.textColored(formatTPSColors(lastServerInfo.getTps()), "TPS: " + round(lastServerInfo.getTps()));
         ImGui.text("MSPT: " + round(lastServerInfo.getMspt()));
         ImGui.text("Memory free: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax() - lastServerInfo.getMemoryFree()));
+        ImGui.text("Current Memory: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax() - lastServerInfo.getMemoryFree()));
         ImGui.text("Memory max: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax()));
+        ImGui.endTabBar();
         ImGui.end();
     }
 
