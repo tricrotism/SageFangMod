@@ -38,7 +38,7 @@ public class ServerInfoMenu implements Menu {
         ImGui.text("Loaded chunks: " + lastServerInfo.getLoadedChunks());
         ImGui.textColored(formatTPSColors(lastServerInfo.getTps()), "TPS: " + round(lastServerInfo.getTps()));
         ImGui.text("MSPT: " + round(lastServerInfo.getMspt()));
-        ImGui.text("Memory free: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax() - lastServerInfo.getMemoryFree()));
+        ImGui.text("Memory free: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryFree()));
         ImGui.text("Current Memory: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax() - lastServerInfo.getMemoryFree()));
         ImGui.text("Memory max: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax()));
         ImGui.endTabBar();
