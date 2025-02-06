@@ -3,12 +3,12 @@
     "id": "sagefang",
     "version": "${version}",
     "name": "SageFang",
-    "description": "A mod that adds an overlay for random stuff I need",
+    "description": "A mod that adds random stuff I need",
     "authors": [
         "tricrotism",
         "Antonio32A"
     ],
-    "icon": "assets/modid/icon.jpg",
+    "icon": "assets/mod/icon.jpg",
     "environment": "*",
     "entrypoints": {
         "main": [
@@ -23,5 +23,13 @@
         "minecraft": "~1.21",
         "java": ">=21",
         "fabric": "*"
+    },
+    "custom": {
+        "modmenu": {
+            "links": {
+                "modmenu.discord": "https://discord.com/invite/c4qHXW42mM"
+            },
+            "update_checker": false
+        }
     }
 }

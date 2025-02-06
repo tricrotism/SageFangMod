@@ -8,10 +8,10 @@
     "imgui.MinecraftClientMixin",
     "imgui.MouseMixin",
     "imgui.RenderSystemMixin",
-    "uiutilsimpl.InBedChatScreenMixin",
-    "uiutilsimpl.SignEditScreenMixin",
     "uiutilsimpl.ClientboundResourcePackPushPacketMixin",
-    "uiutilsimpl.ConnectionMixin"
+    "uiutilsimpl.ConnectionMixin",
+    "uiutilsimpl.InBedChatScreenMixin",
+    "uiutilsimpl.SignEditScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

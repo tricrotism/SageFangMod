@@ -5,7 +5,7 @@ import net.minecraft.network.protocol.Packet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SharedVariables {
+public class UIUtilVariables {
     public static boolean bypassResourcePack = false;
     public static boolean resourcePackForceDeny = false;
 

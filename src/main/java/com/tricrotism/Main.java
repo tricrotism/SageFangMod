@@ -3,7 +3,7 @@ package com.tricrotism;
 import com.tricrotism.data.ServerInfo;
 import com.tricrotism.data.ServerInfoCustomPayload;
 import com.tricrotism.event.menu.MenuRegistrationEvent;
-import com.tricrotism.menus.*;
+import com.tricrotism.features.menus.*;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
