@@ -1,6 +1,6 @@
 package com.tricrotism.mixin.uiutilsimpl;
 
-import com.tricrotism.utils.UIUtilVariables;
+import com.tricrotism.Main;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.SignEditScreen;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +17,7 @@ public class SignEditScreenMixin {
 
     @Inject(at = @At("TAIL"), method = "init")
     public void init(CallbackInfo ci) {
-        if (!UIUtilVariables.shouldEditSign) {
+        if (!Main.getConfig().shouldEditSign) {
             mc.setScreen(null);
         }
     }

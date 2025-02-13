@@ -6,7 +6,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.jetbrains.annotations.NotNull;
 
-public class ServerInfoCustomPayload implements CustomPacketPayload {
+public record ServerInfoCustomPayload(ServerInfo serverInfo) implements CustomPacketPayload {
     public static final Type<ServerInfoCustomPayload> ID = CustomPacketPayload.createType("custom/server_info");
     public static final StreamCodec<FriendlyByteBuf, ServerInfoCustomPayload> CODEC = new StreamCodec<>() {
         @Override
@@ -23,7 +23,6 @@ public class ServerInfoCustomPayload implements CustomPacketPayload {
     };
 
     private static final Gson GSON = new Gson();
-    private final ServerInfo serverInfo;
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
@@ -34,11 +33,4 @@ public class ServerInfoCustomPayload implements CustomPacketPayload {
         buf.writeBytes(GSON.toJson(serverInfo).getBytes());
     }
 
-    public ServerInfoCustomPayload(ServerInfo serverInfo) {
-        this.serverInfo = serverInfo;
-    }
-
-    public ServerInfo getServerInfo() {
-        return serverInfo;
-    }
 }

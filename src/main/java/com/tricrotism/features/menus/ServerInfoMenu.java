@@ -16,6 +16,16 @@ public class ServerInfoMenu implements Menu {
     @Override
     public void frame(ImGuiIO io) {
         try {
+            if (!Main.getConfig().serverInfoMenu) {
+                return;
+            }
+
+            var mc = Minecraft.getInstance();
+            if (!mc.isLocalServer() && mc.getCurrentServer() != null && !mc.getCurrentServer().ip.contains("mchub.com")) {
+                Main.getConfig().serverInfoMenu = false;
+                return;
+            }
+
             int flags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.AlwaysAutoResize;
             if (Minecraft.getInstance().screen == null) {
                 flags |= ImGuiWindowFlags.NoInputs;
@@ -23,6 +33,8 @@ public class ServerInfoMenu implements Menu {
 
             ImGui.setNextWindowBgAlpha(0.45f);
             ImGui.begin("Server Info Menu", flags);
+
+            Main.getConfig().serverInfoMenu = true;
 
             if (lastServerInfo == null) {
                 ImGui.text("No server info");
@@ -36,7 +48,7 @@ public class ServerInfoMenu implements Menu {
             ImGui.text("Entity count: " + lastServerInfo.getEntityCount());
             ImGui.text("Loaded chunks: " + lastServerInfo.getLoadedChunks());
             ImGui.textColored(formatTPSColors(lastServerInfo.getTps()), "TPS: " + round(lastServerInfo.getTps()));
-            ImGui.text("MSPT: " + round(lastServerInfo.getMspt()));
+            ImGui.textColored(formatMSTPColors(lastServerInfo.getMspt()), "MSPT: " + round(lastServerInfo.getMspt()));
             ImGui.text("Memory: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryFree()) + "/" + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax()));
             ImGui.end();
         } catch (Exception e) {
@@ -48,6 +60,16 @@ public class ServerInfoMenu implements Menu {
         if (tps >= 18.0) {
             return ImColor.rgb("#00FF00");
         } else if (tps >= 15.0) {
+            return ImColor.rgb("#FFFF00");
+        } else {
+            return ImColor.rgb("#FF0000");
+        }
+    }
+
+    public static int formatMSTPColors(float mstp) {
+        if (mstp <= 35.0) {
+            return ImColor.rgb("#00FF00");
+        } else if (mstp <= 65.0) {
             return ImColor.rgb("#FFFF00");
         } else {
             return ImColor.rgb("#FF0000");

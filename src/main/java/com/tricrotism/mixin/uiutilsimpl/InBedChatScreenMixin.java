@@ -1,6 +1,7 @@
 package com.tricrotism.mixin.uiutilsimpl;
 
-import com.tricrotism.utils.UIUtilVariables;
+import com.tricrotism.Main;
+import com.tricrotism.config.Config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.InBedChatScreen;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,11 +18,12 @@ public class InBedChatScreenMixin {
 
     @Inject(at = @At("TAIL"), method = "init")
     public void init(CallbackInfo ci) {
-        if (UIUtilVariables.shouldForceWakeUp) {
+        if (Main.getConfig().shouldForceWakeUp) {
             if (mc.player != null && mc.player.isSleeping()) {
                 mc.player.stopSleeping();
                 mc.setScreen(null);
-                UIUtilVariables.shouldForceWakeUp = false;
+                Main.getConfig().shouldForceWakeUp = false;
+                Config.write();
             }
         }
     }

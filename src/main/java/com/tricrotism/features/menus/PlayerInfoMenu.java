@@ -14,6 +14,10 @@ public class PlayerInfoMenu implements Menu {
     @Override
     public void frame(ImGuiIO io) {
         try {
+            if (!Main.getConfig().playerInfoMenu) {
+                return;
+            }
+
             int flags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.AlwaysAutoResize;
             if (Minecraft.getInstance().screen == null) {
                 flags |= ImGuiWindowFlags.NoInputs;

@@ -1,6 +1,6 @@
 package com.tricrotism.mixin.uiutilsimpl;
 
-import com.tricrotism.utils.UIUtilVariables;
+import com.tricrotism.Main;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientCommonPacketListenerImpl;
 import net.minecraft.network.chat.Component;
@@ -24,7 +24,7 @@ public abstract class ClientboundResourcePackPushPacketMixin {
 
     @Inject(at = @At("HEAD"), method = "handleResourcePackPush", cancellable = true)
     public void handleResourcePackPush(ClientboundResourcePackPushPacket packet, CallbackInfo ci) {
-        if (UIUtilVariables.bypassResourcePack && (!packet.isSkippable() && UIUtilVariables.resourcePackForceDeny)) {
+        if (Main.getConfig().bypassResourcePack && (!packet.isSkippable() && Main.getConfig().resourcePackForceDeny)) {
             this.send(new ServerboundResourcePackPacket(Minecraft.getInstance().getUser().getProfileId(), ServerboundResourcePackPacket.Action.ACCEPTED));
             this.send(new ServerboundResourcePackPacket(Minecraft.getInstance().getUser().getProfileId(), ServerboundResourcePackPacket.Action.SUCCESSFULLY_LOADED));
             if (this.minecraft.player != null) {
