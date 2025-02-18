@@ -32,6 +32,8 @@ jobs:
 
       - name: Build Project
         run: ./gradlew build --no-daemon
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.logging.level=info"
 
       - name: Capture Build Artifacts (Linux, Java 21)
         if: runner.os == 'Linux' && matrix.java == '21'
