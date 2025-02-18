@@ -31,7 +31,7 @@ public class Main implements ModInitializer {
         MenuRegistrationEvent.INSTANCE.addListeners(it -> {
             it.register(new SettingsMenu());
             it.register(new ServerInfoMenu());
-            it.register(new UiUtilsMenu());
+            it.register(new MiscMenu());
             it.register(new PlayerInfoMenu());
         });
     }

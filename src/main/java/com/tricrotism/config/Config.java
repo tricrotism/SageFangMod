@@ -34,7 +34,7 @@ public class Config {
     // Disable/Enable Menus
     public boolean playerInfoMenu = true;
     public boolean serverInfoMenu = true;
-    public boolean uiUtilsMenu = true;
+    public boolean miscMenu = true;
 
     // UiUtils Implementation
     public List<Packet<?>> delayedUIPackets = new ArrayList<>();

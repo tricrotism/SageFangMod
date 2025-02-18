@@ -34,10 +34,10 @@ public class SettingsMenu implements Menu {
                 Config.write();
             }
 
-            ImGui.text("UI Utils Menu Enabled");
+            ImGui.text("Misc Menu Enabled");
             ImGui.sameLine();
-            if (ImGui.checkbox("##uiUtilsMenuEnabled", Main.getConfig().uiUtilsMenu)) {
-                Main.getConfig().uiUtilsMenu = !Main.getConfig().uiUtilsMenu;
+            if (ImGui.checkbox("##miscMenuEnabled", Main.getConfig().miscMenu)) {
+                Main.getConfig().miscMenu = !Main.getConfig().miscMenu;
                 Config.write();
             }
 

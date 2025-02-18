@@ -8,11 +8,11 @@ import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
 import net.minecraft.client.Minecraft;
 
-public class UiUtilsMenu implements Menu {
+public class MiscMenu implements Menu {
     @Override
     public void frame(ImGuiIO io) {
         try {
-            if (!Main.getConfig().uiUtilsMenu) {
+            if (!Main.getConfig().miscMenu) {
                 return;
             }
 
@@ -22,7 +22,7 @@ public class UiUtilsMenu implements Menu {
             }
 
             ImGui.setNextWindowBgAlpha(0.45f);
-            ImGui.begin("Ui Utils Menu", flags);
+            ImGui.begin("Misc Menu", flags);
 
             ImGui.text("Bypass Server Resource Pack");
             ImGui.sameLine();
@@ -68,7 +68,7 @@ public class UiUtilsMenu implements Menu {
 
             ImGui.end();
         } catch (Exception e) {
-            Main.LOGGER.error("Error in UiUtilsMenu", e);
+            Main.LOGGER.error("Error in MiscMenu", e);
         }
     }
 }
