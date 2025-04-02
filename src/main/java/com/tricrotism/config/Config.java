@@ -1,5 +1,3 @@
-// src/main/java/com/tricrotism/config/Config.java
-
 package com.tricrotism.config;
 
 import com.google.gson.Gson;

@@ -21,8 +21,7 @@ public class ServerInfoMenu implements Menu {
             }
 
             var mc = Minecraft.getInstance();
-            if (!mc.isLocalServer() && mc.getCurrentServer() != null && !mc.getCurrentServer().ip.contains("mchub.com")) {
-                Main.getConfig().serverInfoMenu = false;
+            if (mc.isLocalServer() || mc.getCurrentServer() == null) {
                 return;
             }
 
@@ -34,7 +33,11 @@ public class ServerInfoMenu implements Menu {
             ImGui.setNextWindowBgAlpha(0.45f);
             ImGui.begin("Server Info Menu", flags);
 
-            Main.getConfig().serverInfoMenu = true;
+            if (!mc.getCurrentServer().ip.contains("mchub")) {
+                ImGui.text("Not on MCHub");
+                ImGui.end();
+                return;
+            }
 
             if (lastServerInfo == null) {
                 ImGui.text("No server info");
