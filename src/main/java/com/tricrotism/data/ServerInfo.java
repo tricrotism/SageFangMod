@@ -1,5 +1,8 @@
 package com.tricrotism.data;
 
+import lombok.Getter;
+
+@Getter
 public class ServerInfo {
     private final String instance;
     private final String world;
@@ -8,10 +11,14 @@ public class ServerInfo {
     private final int loadedChunks;
     private final float tps;
     private final float mspt;
-    private final long memoryFree;
+    private final long memoryUsed;
     private final long memoryMax;
+    private final String javaVersion;
+    private final String hostname;
+    private final int onlinePlayers;
+    private final int logins;
 
-    public ServerInfo(String instance, String world, long uptime, int entityCount, int loadedChunks, float tps, float mspt, long memoryFree, long memoryMax) {
+    public ServerInfo(String instance, String world, long uptime, int entityCount, int loadedChunks, float tps, float mspt, long memoryUsed, long memoryMax, String javaVersion, String hostname, int onlinePlayers, int logins) {
         this.instance = instance;
         this.world = world;
         this.uptime = uptime;
@@ -19,43 +26,12 @@ public class ServerInfo {
         this.loadedChunks = loadedChunks;
         this.tps = tps;
         this.mspt = mspt;
-        this.memoryFree = memoryFree;
+        this.memoryUsed = memoryUsed;
         this.memoryMax = memoryMax;
+        this.javaVersion = javaVersion;
+        this.hostname = hostname;
+        this.onlinePlayers = onlinePlayers;
+        this.logins = logins;
     }
 
-    public String getInstance() {
-        return instance;
-    }
-
-    public String getWorld() {
-        return world;
-    }
-
-    public long getUptime() {
-        return uptime;
-    }
-
-    public int getEntityCount() {
-        return entityCount;
-    }
-
-    public int getLoadedChunks() {
-        return loadedChunks;
-    }
-
-    public float getTps() {
-        return tps;
-    }
-
-    public float getMspt() {
-        return mspt;
-    }
-
-    public long getMemoryFree() {
-        return memoryFree;
-    }
-
-    public long getMemoryMax() {
-        return memoryMax;
-    }
 }

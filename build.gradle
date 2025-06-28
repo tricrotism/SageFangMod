@@ -20,17 +20,19 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	// Uncomment the following line to enable the deprecated Fabric API modules. 
-	// These are included in the Fabric API production distribution and allow you to update your mod to the latest modules at a later more convenient time.
-
-	// modImplementation "net.fabricmc.fabric-api:fabric-api-deprecated:${project.fabric_version}"
-
 	include implementation("io.github.spair:imgui-java-binding:${project.imgui_version}")
 	include implementation("io.github.spair:imgui-java-lwjgl3:${project.imgui_version}")
 
 	include implementation("io.github.spair:imgui-java-natives-windows:${project.imgui_version}")
 	include implementation("io.github.spair:imgui-java-natives-linux:${project.imgui_version}")
 	include implementation("io.github.spair:imgui-java-natives-macos:${project.imgui_version}")
+
+	include modImplementation("org.incendo:cloud-core:2.0.0")
+	include modImplementation("org.incendo:cloud-annotations:2.0.0")
+	include modImplementation("org.incendo:cloud-fabric:2.0.0-beta.10")
+	include modImplementation("org.incendo:cloud-minecraft-extras:2.0.0-beta.10")
+
+	include modImplementation("net.kyori:adventure-platform-fabric:${project.adventure_version}")
 
 	modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
 

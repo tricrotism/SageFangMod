@@ -29,7 +29,11 @@ public class ImGuiUtil {
         data.setConfigFlags(ImGuiConfigFlags.DockingEnable | ImGuiConfigFlags.ViewportsEnable);
 
         imGuiGlfw.init(handle, true);
-        imGuiGl3.init();
+        try {
+            imGuiGl3.init();
+        } catch (Exception e) {
+            Main.LOGGER.error("Error initializing ImGui", e);
+        }
     }
 
     public void draw(final List<Menu> menu) {

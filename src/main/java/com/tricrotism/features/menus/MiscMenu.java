@@ -66,6 +66,20 @@ public class MiscMenu implements Menu {
                 Config.write();
             }
 
+            ImGui.text("Should Log Sounds");
+            ImGui.sameLine();
+            if (ImGui.checkbox("##shouldLogSounds", Main.getConfig().shouldLogSounds)) {
+                Main.getConfig().shouldLogSounds = !Main.getConfig().shouldLogSounds;
+                Config.write();
+            }
+
+            ImGui.text("Should Show Slot Numbers");
+            ImGui.sameLine();
+            if (ImGui.checkbox("##shouldShowSlotNumbers", Main.getConfig().shouldShowSlotNumbers)) {
+                Main.getConfig().shouldShowSlotNumbers = !Main.getConfig().shouldShowSlotNumbers;
+                Config.write();
+            }
+
             ImGui.end();
         } catch (Exception e) {
             Main.LOGGER.error("Error in MiscMenu", e);

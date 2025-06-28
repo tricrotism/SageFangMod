@@ -8,6 +8,8 @@
     "imgui.MinecraftClientMixin",
     "imgui.MouseMixin",
     "imgui.RenderSystemMixin",
+    "misc.SoundLoggingMixin",
+    "misc.HandledScreenMixin",
     "uiutilsimpl.ClientboundResourcePackPushPacketMixin",
     "uiutilsimpl.ConnectionMixin",
     "uiutilsimpl.InBedChatScreenMixin",

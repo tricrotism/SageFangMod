@@ -52,7 +52,11 @@ public class ServerInfoMenu implements Menu {
             ImGui.text("Loaded chunks: " + lastServerInfo.getLoadedChunks());
             ImGui.textColored(formatTPSColors(lastServerInfo.getTps()), "TPS: " + round(lastServerInfo.getTps()));
             ImGui.textColored(formatMSTPColors(lastServerInfo.getMspt()), "MSPT: " + round(lastServerInfo.getMspt()));
-            ImGui.text("Memory: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryFree()) + "/" + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax()));
+            ImGui.text("Memory: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryUsed()) + "/" + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax()));
+            ImGui.text("Java Version: " + lastServerInfo.getJavaVersion());
+            ImGui.text("Hostname: " + lastServerInfo.getHostname());
+            ImGui.text("Online Players: " + NumberUtils.format(lastServerInfo.getOnlinePlayers()));
+            ImGui.text("Logins: " + NumberUtils.format(lastServerInfo.getLogins()));
             ImGui.end();
         } catch (Exception e) {
             Main.LOGGER.error("Error in ServerInfoMenu", e);

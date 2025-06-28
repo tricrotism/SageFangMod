@@ -6,6 +6,7 @@ import java.util.Locale;
 public class NumberUtils {
 
     public static final NumberFormat DOUBLE_FORMAT = NumberFormat.getNumberInstance(Locale.US);
+    public static final NumberFormat formatNumberFormatter = NumberFormat.getInstance();
 
     static {
         DOUBLE_FORMAT.setMinimumFractionDigits(2);
@@ -14,6 +15,10 @@ public class NumberUtils {
 
     public static String format(double d) {
         return DOUBLE_FORMAT.format(d);
+    }
+
+    public static String format(long l) {
+        return formatNumberFormatter.format(l);
     }
 
     public static String formatMemorySize(long bytes) {

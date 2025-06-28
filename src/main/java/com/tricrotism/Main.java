@@ -4,9 +4,14 @@ import com.tricrotism.config.Config;
 import com.tricrotism.data.ServerInfo;
 import com.tricrotism.data.ServerInfoCustomPayload;
 import com.tricrotism.event.menu.MenuRegistrationEvent;
-import com.tricrotism.features.menus.*;
+import com.tricrotism.features.commands.SFCommandManager;
+import com.tricrotism.features.menus.MiscMenu;
+import com.tricrotism.features.menus.PlayerInfoMenu;
+import com.tricrotism.features.menus.ServerInfoMenu;
+import com.tricrotism.features.menus.SettingsMenu;
 import lombok.Getter;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import org.apache.logging.log4j.LogManager;
@@ -34,6 +39,8 @@ public class Main implements ModInitializer {
             it.register(new MiscMenu());
             it.register(new PlayerInfoMenu());
         });
+
+        ClientCommandRegistrationCallback.EVENT.register(((SFCommandManager::register)));
     }
 
     public static void logReportMsg(@NotNull Throwable error) {
@@ -41,7 +48,7 @@ public class Main implements ModInitializer {
         String clazz = walker.getCallerClass().getSimpleName();
         String method = walker.walk(frames -> frames.skip(1).findFirst().orElseThrow().getMethodName());
 
-        if(method.isBlank())
+        if (method.isBlank())
             method = error.getStackTrace()[0].getMethodName();
 
         LOGGER.error("[{}#{}] /!\\ Error! Full log file attached! /!\\", clazz, method, error);

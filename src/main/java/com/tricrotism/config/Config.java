@@ -43,6 +43,10 @@ public class Config {
     public boolean shouldEditSign = true;
     public boolean shouldForceWakeUp = false;
 
+    // Misc
+    public boolean shouldLogSounds = false;
+    public boolean shouldShowSlotNumbers = false;
+
     /**
      * Creates a new Config. Should only be called once.
      */
