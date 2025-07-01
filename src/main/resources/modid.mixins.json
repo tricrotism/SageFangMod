@@ -10,7 +10,7 @@
     "imgui.RenderSystemMixin",
     "misc.SoundLoggingMixin",
     "misc.HandledScreenMixin",
-    "uiutilsimpl.ClientboundResourcePackPushPacketMixin",
+    "uiutilsimpl.ClientCommonPacketListenerImplMixin",
     "uiutilsimpl.ConnectionMixin",
     "uiutilsimpl.InBedChatScreenMixin",
     "uiutilsimpl.SignEditScreenMixin"

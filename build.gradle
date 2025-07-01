@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.9-SNAPSHOT'
+	id 'fabric-loom' version '1.10-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -26,11 +26,6 @@ dependencies {
 	include implementation("io.github.spair:imgui-java-natives-windows:${project.imgui_version}")
 	include implementation("io.github.spair:imgui-java-natives-linux:${project.imgui_version}")
 	include implementation("io.github.spair:imgui-java-natives-macos:${project.imgui_version}")
-
-	include modImplementation("org.incendo:cloud-core:2.0.0")
-	include modImplementation("org.incendo:cloud-annotations:2.0.0")
-	include modImplementation("org.incendo:cloud-fabric:2.0.0-beta.10")
-	include modImplementation("org.incendo:cloud-minecraft-extras:2.0.0-beta.10")
 
 	include modImplementation("net.kyori:adventure-platform-fabric:${project.adventure_version}")
 

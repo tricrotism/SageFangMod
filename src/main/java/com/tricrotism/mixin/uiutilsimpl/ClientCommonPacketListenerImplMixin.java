@@ -19,10 +19,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.net.URI;
 import java.util.Optional;
 
 @Mixin(ClientCommonPacketListenerImpl.class)
-public abstract class ClientboundResourcePackPushPacketMixin {
+public abstract class ClientCommonPacketListenerImplMixin {
 
     @Unique
     private static boolean sentMessage = false;
@@ -41,8 +42,8 @@ public abstract class ClientboundResourcePackPushPacketMixin {
                     .append(promptMessage)
                     .append(Component.literal("\", URL: ").withStyle(ChatFormatting.WHITE))
                     .append(Component.literal(packet.url().isEmpty() ? "<no url>" : packet.url())
-                            .withStyle(ChatFormatting.AQUA).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, packet.url())))
-                            .withStyle(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to open link")))))
+                            .withStyle(ChatFormatting.AQUA).withStyle(style -> style.withClickEvent(new ClickEvent.OpenUrl(URI.create(packet.url()))))
+                            .withStyle(style -> style.withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to open link")))))
                     .append(Component.literal(", Hash: " + packet.hash()).withStyle(ChatFormatting.WHITE))
                     .append(Component.literal(", Required?: " + packet.required()).withStyle(ChatFormatting.WHITE)
                     );

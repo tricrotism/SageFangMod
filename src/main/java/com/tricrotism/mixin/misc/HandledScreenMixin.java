@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.Slot;
+import org.joml.Matrix3x2f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,9 +26,9 @@ public class HandledScreenMixin {
         int x = slot.x;
         int y = slot.y;
         int index = slot.index;
-        context.pose().pushPose();
-        context.pose().translate(0, 0, 399);
-        context.pose().scale(SCALE, SCALE, SCALE);
+        context.pose().pushMatrix();
+        context.pose().translate(0, 0);
+        context.pose().scale(SCALE, SCALE);
         context.drawString(
                 Minecraft.getInstance().font,
                 String.valueOf(index),
@@ -36,6 +37,6 @@ public class HandledScreenMixin {
                 Color.WHITE.getRGB(),
                 true
         );
-        context.pose().popPose();
+        context.pose().popMatrix();
     }
 }

@@ -19,11 +19,11 @@ public class SoundLoggingMixin {
     public void handleSoundEvent(ClientboundSoundPacket clientboundSoundPacket, CallbackInfo ci) {
         if (Main.getConfig().shouldLogSounds) {
             String sound = "";
-            sound = sound + "Source: " + clientboundSoundPacket.getSource().getName() + "\t";
-            sound = sound + "Source: " + clientboundSoundPacket.getSound().getRegisteredName() + "\t";
+            sound = sound + "Source Name: " + clientboundSoundPacket.getSource().getName() + "\t";
+            sound = sound + "Registered Name: " + clientboundSoundPacket.getSound().getRegisteredName() + "\t";
             sound = sound + "Volume: " + clientboundSoundPacket.getVolume() + "\t";
             sound = sound + "Pitch: " + clientboundSoundPacket.getPitch() + "\t";
-            sound = sound + "Seed: " + clientboundSoundPacket.getSeed() + "\t";
+            sound = sound + "Seed: " + clientboundSoundPacket.getSeed();
 
             log.info(sound);
         }
