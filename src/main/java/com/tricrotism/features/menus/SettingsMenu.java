@@ -41,6 +41,13 @@ public class SettingsMenu implements Menu {
                 Config.write();
             }
 
+            ImGui.text("Skill Crash Menu Enabled");
+            ImGui.sameLine();
+            if (ImGui.checkbox("##skillsCrashMenuEnabled", Main.getConfig().skillsCrashMenu)) {
+                Main.getConfig().skillsCrashMenu = !Main.getConfig().skillsCrashMenu;
+                Config.write();
+            }
+
             ImGui.end();
         } catch (Exception e) {
             Main.LOGGER.error("Error in SettingsMenu", e);

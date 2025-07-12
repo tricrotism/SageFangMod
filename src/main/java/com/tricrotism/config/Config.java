@@ -33,6 +33,7 @@ public class Config {
     public boolean playerInfoMenu = true;
     public boolean serverInfoMenu = true;
     public boolean miscMenu = true;
+    public boolean skillsCrashMenu = false;
 
     // UiUtils Implementation
     public List<Packet<?>> delayedUIPackets = new ArrayList<>();
@@ -46,6 +47,17 @@ public class Config {
     // Misc
     public boolean shouldLogSounds = false;
     public boolean shouldShowSlotNumbers = false;
+
+    // Skills Crash
+    public boolean skillCrash = false;
+
+    public int amountOfPacketsPerTick = 15;
+    public int amountOfPacketsPerTickMin = 1;
+    public int amountOfPacketsPerTickMax = 100;
+
+    public int skillCrashBuffer = 32760;
+    public int skillCrashBufferMin = 1;
+    public int skillCrashBufferMax = 32760;
 
     /**
      * Creates a new Config. Should only be called once.

@@ -1,4 +1,4 @@
-package com.tricrotism.event;
+package com.tricrotism.utils.event;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.tricrotism.event;
+package com.tricrotism.utils.event;
 
 @FunctionalInterface
 public interface EventListener<A> {

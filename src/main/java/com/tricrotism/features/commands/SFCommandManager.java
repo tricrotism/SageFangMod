@@ -7,9 +7,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.kyori.adventure.platform.modcommon.MinecraftClientAudiences;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.world.entity.player.Player;
@@ -31,15 +28,12 @@ public class SFCommandManager {
     private static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().create();
     private static final Gson GSON_COMPACT = new Gson();
 
-    private SFCommandManager() {
-    }
-
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandBuildContext access) {
         dispatcher.register(ClientCommandManager.literal("sagefang")
                 .then(ClientCommandManager.literal("minimessage").then(ClientCommandManager.argument("text", StringArgumentType.greedyString())
                         .executes(ctx -> {
-                                    Component component = MiniMessage.miniMessage().deserialize(StringArgumentType.getString(ctx, "text"));
-                                    net.minecraft.network.chat.Component nativeComponent = MinecraftClientAudiences.of().asNative(component);
+                                    net.kyori.adventure.text.Component component = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(StringArgumentType.getString(ctx, "text"));
+                                    net.minecraft.network.chat.Component nativeComponent = net.kyori.adventure.platform.modcommon.MinecraftClientAudiences.of().asNative(component);
                                     int componentWidth = Minecraft.getInstance().font.width(nativeComponent);
 
                                     ctx.getSource().sendFeedback(nativeComponent);

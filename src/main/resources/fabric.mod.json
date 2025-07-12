@@ -5,7 +5,9 @@
     "name": "SageFang",
     "description": "A mod that adds random stuff I need",
     "authors": [
-        "tricrotism",
+        "tricrotism"
+    ],
+    "contributors" : [
         "Antonio32A"
     ],
     "icon": "assets/mod/icon.jpg",

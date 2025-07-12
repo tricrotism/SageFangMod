@@ -1,9 +1,8 @@
 package com.tricrotism.mixin.imgui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.tricrotism.Menu;
-import com.tricrotism.event.menu.MenuRegistrationEvent;
-import com.tricrotism.event.menu.MenuRegistrationEventArgs;
+import com.tricrotism.utils.event.menu.MenuRegistrationEvent;
+import com.tricrotism.utils.event.menu.MenuRegistrationEventArgs;
 import com.tricrotism.utils.ImGuiUtil;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
