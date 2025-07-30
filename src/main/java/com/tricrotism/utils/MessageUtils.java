@@ -7,6 +7,10 @@ import net.minecraft.network.chat.Component;
 
 public class MessageUtils {
 
+    public static void sendMessage(Minecraft mc, String message) {
+        sendMessage(mc, Component.literal(message));
+    }
+
     public static void sendMessage(Minecraft mc, MutableComponent message) {
         MutableComponent component = Component.empty()
                 .append(Component.literal("SageFang Mod").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))

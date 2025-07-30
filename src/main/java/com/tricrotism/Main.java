@@ -56,14 +56,13 @@ public class Main implements ModInitializer {
             }
         });
 
-        MenuRegistrationEvent.INSTANCE.addListeners(it -> {
-            it.registerAll(new SettingsMenu(),
-                    new ServerInfoMenu(),
-                    new MiscMenu(),
-                    new PlayerInfoMenu(),
-                    new SkillCrashMenu()
-            );
-        });
+        MenuRegistrationEvent.INSTANCE.addListeners(it -> it.registerAll(
+                new SettingsMenu(),
+                new ServerInfoMenu(),
+                new MiscMenu(),
+                new PlayerInfoMenu(),
+                new SkillCrashMenu()
+        ));
 
         ClientCommandRegistrationCallback.EVENT.register(((SFCommandManager::register)));
     }
