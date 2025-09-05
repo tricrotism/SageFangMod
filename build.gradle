@@ -36,8 +36,8 @@ dependencies {
 
 	modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
 
-	compileOnly("org.projectlombok:lombok:1.18.38")
-	annotationProcessor("org.projectlombok:lombok:1.18.38")
+	compileOnly("org.projectlombok:lombok:1.18.40")
+	annotationProcessor("org.projectlombok:lombok:1.18.40")
 }
 
 base {
