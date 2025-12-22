@@ -34,7 +34,7 @@ dependencies {
 
 	include modImplementation("net.kyori:adventure-platform-fabric:${project.adventure_version}")
 
-	modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+	modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.2")
 
 	compileOnly("org.projectlombok:lombok:1.18.42")
 	annotationProcessor("org.projectlombok:lombok:1.18.42")
