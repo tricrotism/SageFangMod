@@ -1,22 +1,25 @@
 package com.tricrotism.features.menus;
 
-import com.tricrotism.Main;
-import com.tricrotism.Menu;
+import com.tricrotism.SageFang;
+import com.tricrotism.api.menus.Menu;
+import com.tricrotism.config.SageFangConfig;
+import com.tricrotism.utils.GraphHistory;
 import com.tricrotism.utils.NumberUtils;
 import com.tricrotism.utils.TimeUtils;
-import imgui.ImColor;
+import com.tricrotism.utils.GraphRenderer;
+import com.tricrotism.utils.MetricColors;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
 import net.minecraft.client.Minecraft;
 
-import static com.tricrotism.Main.lastServerInfo;
+import static com.tricrotism.SageFang.lastServerInfo;
 
 public class ServerInfoMenu implements Menu {
     @Override
     public void frame(ImGuiIO io) {
         try {
-            if (!Main.getConfig().serverInfoMenu) {
+            if (!SageFangConfig.isServerInfoMenuEnabled() || SageFangConfig.isMergedInfoMenu()) {
                 return;
             }
 
@@ -25,13 +28,13 @@ public class ServerInfoMenu implements Menu {
                 return;
             }
 
-            int flags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.AlwaysAutoResize;
+            int flags = ImGuiWindowFlags.AlwaysAutoResize;
             if (Minecraft.getInstance().screen == null) {
                 flags |= ImGuiWindowFlags.NoInputs;
             }
 
             ImGui.setNextWindowBgAlpha(0.45f);
-            ImGui.begin("Server Info Menu", flags);
+            ImGui.begin("Server Info", flags);
 
             if (!mc.getCurrentServer().ip.contains("mchub")) {
                 ImGui.text("Not on MCHub");
@@ -45,45 +48,45 @@ public class ServerInfoMenu implements Menu {
                 return;
             }
 
-            ImGui.text("Instance: " + lastServerInfo.getInstance());
-            ImGui.text("World: " + lastServerInfo.getWorld());
-            ImGui.text("Uptime: " + TimeUtils.getTimeAmount(lastServerInfo.getUptime(), true, false));
-            ImGui.text("Entity count: " + lastServerInfo.getEntityCount());
-            ImGui.text("Loaded chunks: " + lastServerInfo.getLoadedChunks());
-            ImGui.textColored(formatTPSColors(lastServerInfo.getTps()), "TPS: " + round(lastServerInfo.getTps()));
-            ImGui.textColored(formatMSTPColors(lastServerInfo.getMspt()), "MSPT: " + round(lastServerInfo.getMspt()));
-            ImGui.text("Memory: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryUsed()) + "/" + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax()));
-            ImGui.text("Java Version: " + lastServerInfo.getJavaVersion());
-            ImGui.text("Hostname: " + lastServerInfo.getHostname());
-            ImGui.text("Online Players: " + NumberUtils.format(lastServerInfo.getOnlinePlayers()));
-            ImGui.text("Logins: " + NumberUtils.format(lastServerInfo.getLogins()));
+            ImGui.text("Instance");  ImGui.sameLine(); ImGui.text(lastServerInfo.getInstance());
+            ImGui.text("World");     ImGui.sameLine(); ImGui.text(lastServerInfo.getWorld());
+            ImGui.text("Uptime");    ImGui.sameLine(); ImGui.text(TimeUtils.getTimeAmount(lastServerInfo.getUptime(), true, false));
+            ImGui.text("Entities");  ImGui.sameLine(); ImGui.text(String.valueOf(lastServerInfo.getEntityCount()));
+            ImGui.text("Chunks");    ImGui.sameLine(); ImGui.text(String.valueOf(lastServerInfo.getLoadedChunks()));
+
+            ImGui.text("TPS");       ImGui.sameLine();
+            ImGui.textColored(MetricColors.tps(lastServerInfo.getTps()), String.valueOf(Math.round(lastServerInfo.getTps() * 100.0f) / 100.0f));
+
+            ImGui.text("MSPT");      ImGui.sameLine();
+            ImGui.textColored(MetricColors.mspt(lastServerInfo.getMspt()), String.valueOf(Math.round(lastServerInfo.getMspt() * 100.0f) / 100.0f));
+
+            ImGui.text("Memory");    ImGui.sameLine();
+            ImGui.text(NumberUtils.formatMemorySize(lastServerInfo.getMemoryUsed()) + " / " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax()));
+
+            ImGui.text("Java");      ImGui.sameLine(); ImGui.text(lastServerInfo.getJavaVersion());
+            ImGui.text("Host");      ImGui.sameLine(); ImGui.text(lastServerInfo.getHostname());
+            ImGui.text("Players");   ImGui.sameLine(); ImGui.text(NumberUtils.format(lastServerInfo.getOnlinePlayers()));
+            ImGui.text("Logins");    ImGui.sameLine(); ImGui.text(NumberUtils.format(lastServerInfo.getLogins()));
+
+            GraphHistory.INSTANCE.ensureCapacity();
+            GraphHistory.INSTANCE.pushServerMetrics(
+                    lastServerInfo.getTps(),
+                    lastServerInfo.getMspt(),
+                    lastServerInfo.getMemoryUsed() / (1024f * 1024f)
+            );
+
+            if (SageFangConfig.isShowGraphs() && GraphHistory.INSTANCE.tps.size() > 1) {
+                ImGui.separator();
+                if (ImGui.collapsingHeader("Graphs##serverGraphs")) {
+                    if (SageFangConfig.isGraphTps()) GraphRenderer.plotLines("TPS", GraphHistory.INSTANCE.tps, 0f, 22f);
+                    if (SageFangConfig.isGraphMspt()) GraphRenderer.plotLines("MSPT", GraphHistory.INSTANCE.mspt, 0f, 100f);
+                    if (SageFangConfig.isGraphServerMemory()) GraphRenderer.plotLines("Server Memory (MB)", GraphHistory.INSTANCE.serverMemory, 0f, Float.NaN);
+                }
+            }
+
             ImGui.end();
         } catch (Exception e) {
-            Main.LOGGER.error("Error in ServerInfoMenu", e);
+            SageFang.LOGGER.error("Error in ServerInfoMenu", e);
         }
-    }
-
-    public static int formatTPSColors(float tps) {
-        if (tps >= 18.0) {
-            return ImColor.rgb("#00FF00");
-        } else if (tps >= 15.0) {
-            return ImColor.rgb("#FFFF00");
-        } else {
-            return ImColor.rgb("#FF0000");
-        }
-    }
-
-    public static int formatMSTPColors(float mstp) {
-        if (mstp <= 35.0) {
-            return ImColor.rgb("#00FF00");
-        } else if (mstp <= 65.0) {
-            return ImColor.rgb("#FFFF00");
-        } else {
-            return ImColor.rgb("#FF0000");
-        }
-    }
-
-    private float round(float value) {
-        return Math.round(value * 100.0f) / 100.0f;
     }
 }

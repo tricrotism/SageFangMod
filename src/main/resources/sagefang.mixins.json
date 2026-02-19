@@ -1,26 +1,35 @@
 {
-  "required": true,
-  "minVersion": "0.8",
-  "package": "com.tricrotism.mixin",
-  "compatibilityLevel": "JAVA_21",
-  "mixins": [
-    "events.EventsClientPacketListenerMixin",
-    "events.EventsMinecraftMixin",
-    "imgui.KeyboardMixin",
-    "imgui.MinecraftClientMixin",
-    "imgui.MouseMixin",
-    "imgui.RenderSystemMixin",
-    "misc.HandledScreenMixin",
-    "misc.SoundLoggingMixin",
-    "uiutilsimpl.ClientCommonPacketListenerImplMixin",
-    "uiutilsimpl.ConnectionMixin",
-    "uiutilsimpl.InBedChatScreenMixin",
-    "uiutilsimpl.SignEditScreenMixin"
-  ],
-  "injectors": {
-    "defaultRequire": 1
-  },
-  "client": [
-    "misc.ClientPacketListenerMixin"
-  ]
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.tricrotism.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "accessors.misc.ServerResourcePackManager$PackEntryAccessor",
+        "accessors.ConnectionAccessor",
+        "impl.audio.SoundLoggingMixin",
+        "impl.branding.WindowTitleMixin",
+        "impl.chat.ChatScreenMixin",
+        "impl.chat.EditBoxMixin",
+        "impl.chat.StringUtilMixin",
+        "impl.events.GameSessionMixin",
+        "impl.events.TickMixin",
+        "impl.imgui.KeyboardMixin",
+        "impl.imgui.MinecraftClientMixin",
+        "impl.imgui.MouseMixin",
+        "impl.imgui.RenderSystemMixin",
+        "impl.inventory.HandledScreenMixin",
+        "impl.misc.GameNarratorMixin",
+        "impl.network.ConnectionMixin",
+        "impl.network.PacketValidationMixin",
+        "impl.network.ResourcePackListenerMixin",
+        "impl.screen.InBedChatScreenMixin",
+        "impl.screen.ServerPackManagerMixin",
+        "impl.screen.SignEditScreenMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "client": [
+        "impl.branding.ClientBrandMixin"
+    ]
 }

@@ -8,13 +8,14 @@
         "tricrotism"
     ],
     "contributors" : [
-        "Antonio32A"
+        "Antonio32A",
+        "MeteorDevelopment"
     ],
     "icon": "assets/mod/icon.jpg",
     "environment": "*",
     "entrypoints": {
         "main": [
-          "com.tricrotism.Main"
+          "com.tricrotism.SageFang"
         ]
     },
     "mixins": [
@@ -22,7 +23,7 @@
     ],
     "depends": {
         "fabricloader": ">=0.15.10",
-        "minecraft": "1.21.7",
+        "minecraft": "1.21.10",
         "java": ">=21",
         "fabric": "*"
     },

@@ -1,6 +1,6 @@
 package com.tricrotism.events;
 
-import com.tricrotism.eventbus.ICancellable;
+import com.tricrotism.api.eventbus.ICancellable;
 
 public class Cancellable implements ICancellable {
     private boolean cancelled = false;

@@ -1,0 +1,6 @@
+accessWidener    v1    named
+accessible class net/minecraft/client/resources/server/ServerPackManager$ServerPackData
+accessible class net/minecraft/world/item/component/ResolvableProfile
+accessible class net/minecraft/world/item/component/ResolvableProfile$Partial
+accessible method net/minecraft/network/chat/contents/TranslatableContents filterAllowedArguments (Ljava/lang/Object;)Lcom/mojang/serialization/DataResult;
+accessible field net/minecraft/world/item/component/ResolvableProfile$Partial MAP_CODEC Lcom/mojang/serialization/MapCodec;

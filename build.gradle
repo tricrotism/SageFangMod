@@ -1,6 +1,7 @@
 plugins {
     id 'fabric-loom' version '1.11-SNAPSHOT'
     id 'maven-publish'
+    id 'com.gradleup.shadow' version '9.0.0-beta12'
 }
 
 version = project.mod_version
@@ -33,7 +34,17 @@ repositories {
     }
 }
 
+// MC 1.21.10 ships lwjgl-stb 3.3.3 — imgui-java's BOM upgrades it to 3.3.4
+// which removed nstbir_resize_uint8, breaking NativeImage.resizeSubRectTo
+configurations.all {
+    resolutionStrategy {
+        force 'org.lwjgl:lwjgl-stb:3.3.3'
+    }
+}
+
 dependencies {
+    implementation 'org.jetbrains:annotations:24.0.0'
+
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
@@ -46,10 +57,16 @@ dependencies {
     include implementation("io.github.spair:imgui-java-lwjgl3:${project.imgui_version}")
 
     include implementation("io.github.spair:imgui-java-natives-windows:${project.imgui_version}")
-    include implementation("io.github.spair:imgui-java-natives-linux:${project.imgui_version}")
-    include implementation("io.github.spair:imgui-java-natives-macos:${project.imgui_version}")
+    //im a windows user :nerd:
+//    include implementation("io.github.spair:imgui-java-natives-linux:${project.imgui_version}")
+//    include implementation("io.github.spair:imgui-java-natives-macos:${project.imgui_version}")
 
     include modImplementation("net.kyori:adventure-platform-fabric:${project.adventure_version}")
+
+    include implementation("io.avaje:avaje-config:4.1")
+    include implementation("io.avaje:avaje-applog:1.2")
+
+    include implementation("org.checkerframework:checker-qual:3.42.0")
 
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
 
@@ -59,6 +76,10 @@ dependencies {
 
 base {
     archivesName = project.archives_base_name
+}
+
+loom {
+    accessWidenerPath = file("src/main/resources/sagefang.accesswidener")
 }
 
 processResources {
@@ -71,6 +92,21 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.release = 21
+}
+
+shadowJar {
+    zip64 = true
+    archiveClassifier = 'shadow'
+}
+
+tasks {
+    shadowJar {
+        relocate("io.github.spair", "com.tricrotism.lib.io.github.spair")
+    }
+
+    assemble {
+        dependsOn(shadowJar)
+    }
 }
 
 java {
@@ -88,4 +124,3 @@ jar {
         rename { "${it}_${base.archivesName.get()}" }
     }
 }
-
