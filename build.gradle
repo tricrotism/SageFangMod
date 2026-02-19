@@ -43,7 +43,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation 'org.jetbrains:annotations:24.0.0'
+    implementation 'org.jetbrains:annotations:26.1.0'
 
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
