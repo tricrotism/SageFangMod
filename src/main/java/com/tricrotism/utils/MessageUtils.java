@@ -13,7 +13,7 @@ public class MessageUtils {
 
     public static void sendMessage(Minecraft mc, MutableComponent message) {
         MutableComponent component = Component.empty()
-                .append(Component.literal("SageFang Mod").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))
+                .append(Component.literal("SFM").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))
                 .append(Component.literal(" » ").withStyle(ChatFormatting.DARK_GRAY))
                 .append(message);
 

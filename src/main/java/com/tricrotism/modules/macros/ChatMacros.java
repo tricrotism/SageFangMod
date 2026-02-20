@@ -174,8 +174,12 @@ public class ChatMacros extends Module implements Menu, SFCommand {
 
             // Add Macro section
             ImGui.separatorText("Add Macro");
+            ImGui.textDisabled("Tip: Use the same name to add multiple values to one macro.");
             ImGui.inputText("Name##macroName", nameBuffer);
             ImGui.inputText("Value##macroValue", valueBuffer);
+            if (ImGui.isItemHovered()) {
+                ImGui.setTooltip("Prefix with %%DELAY:ms%% for delayed send.\nAdd multiple values to the same macro name to chain messages.");
+            }
             if (ImGui.button("Add##macroAdd")) {
                 String name = nameBuffer.get().trim();
                 String value = valueBuffer.get().trim();

@@ -8,6 +8,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ServerboundContainerButtonClickPacket;
 import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
@@ -26,7 +27,11 @@ public class ConnectionMixin {
     public void send(Packet<?> packet, @Nullable ChannelFutureListener channelFutureListener, boolean bl, CallbackInfo ci) {
         // Only intercept serverbound packets — clientbound packets also pass through
         // send() on integrated server (singleplayer) and must not be captured.
-        if (!packet.getClass().getSimpleName().startsWith("Serverbound")) return;
+        try {
+            if (packet.type().flow() != PacketFlow.SERVERBOUND) return;
+        } catch (Exception e) {
+            return; // can't determine flow, skip
+        }
 
         // Blink — queue all serverbound packets while active
         if (Blink.instance.capturePacket(packet)) {
