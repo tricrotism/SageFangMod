@@ -68,7 +68,7 @@ dependencies {
 
     include implementation("org.checkerframework:checker-qual:3.53.1")
 
-    modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+    modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.2")
 
     compileOnly("org.projectlombok:lombok:1.18.38")
     annotationProcessor("org.projectlombok:lombok:1.18.38")
