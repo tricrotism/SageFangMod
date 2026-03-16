@@ -39,8 +39,6 @@ public class PacketManager extends Module implements Menu {
 
     public static final PacketManager instance = new PacketManager();
 
-    // ── Outbound queue ──────────────────────────────────────────────
-
     private final Deque<QueuedPacket> outboundQueue = new ConcurrentLinkedDeque<>();
 
     @Getter
@@ -49,52 +47,43 @@ public class PacketManager extends Module implements Menu {
     private boolean delayOutbound;
     private boolean logPackets;
 
-    // ── Selective delay filter ───────────────────────────────────────
-
-    /** When non-empty, only packets whose short name is in this set get delayed. */
+    /**
+     * When non-empty, only packets whose short name is in this set get delayed.
+     */
     private final Set<String> delayFilter = new LinkedHashSet<>();
-
-    // ── Packet log (rolling, both directions) ───────────────────────
 
     private final Deque<PacketLogEntry> packetLog = new ArrayDeque<>();
     private static final int MAX_LOG = 200;
 
-    /** Distinct packet type names we've seen (for the selector UI). */
+    /**
+     * Distinct packet type names we've seen (for the selector UI).
+     */
     private final Set<String> seenOutboundTypes = new TreeSet<>();
     private final Set<String> seenInboundTypes = new TreeSet<>();
 
-    // ── Missing packet detection ────────────────────────────────────
-
     private static final Set<Class<?>> EXPECTED_PACKETS = Set.of(
-            ClientboundLoginPacket.class,
-            ClientboundPlayerAbilitiesPacket.class,
-            ClientboundSetHealthPacket.class,
-            ClientboundSetExperiencePacket.class,
-            ClientboundGameEventPacket.class,
-            ClientboundChangeDifficultyPacket.class,
-            ClientboundPlayerPositionPacket.class,
-            ClientboundSetChunkCacheCenterPacket.class
+        ClientboundLoginPacket.class,
+        ClientboundPlayerAbilitiesPacket.class,
+        ClientboundSetHealthPacket.class,
+        ClientboundSetExperiencePacket.class,
+        ClientboundGameEventPacket.class,
+        ClientboundChangeDifficultyPacket.class,
+        ClientboundPlayerPositionPacket.class,
+        ClientboundSetChunkCacheCenterPacket.class
     );
 
     private final Set<String> receivedPacketTypes = Collections.synchronizedSet(new HashSet<>());
     private int joinTickCounter = -1;
     private static final int GRACE_TICKS = 100;
 
-    // ── Keybind ─────────────────────────────────────────────────────
-
     private boolean keyWasDown;
     private boolean awaitingKeybind;
-
-    // ── ImGui state ─────────────────────────────────────────────────
 
     private final ImString filterText = new ImString(128);
     private final ImString delayFilterInput = new ImString(128);
 
-    // ── Constructor ─────────────────────────────────────────────────
-
     public PacketManager() {
-        super("packetmanager", "Packet Manager", "Intercept, delay, and inspect all packets.");
-        // Restore persisted delay filter
+        super("packetmanager", "Packet Manager", "Intercept, delay, and inspect all packets.", "Network");
         String saved = Config.get(baseConfig + ".delayFilter", "");
         if (!saved.isBlank()) {
             for (String s : saved.split(",")) {
@@ -104,8 +93,6 @@ public class PacketManager extends Module implements Menu {
         }
     }
 
-    // ── Keybind config ──────────────────────────────────────────────
-
     private int getKeybind() {
         return Config.getInt(baseConfig + ".keybind", GLFW.GLFW_KEY_UNKNOWN);
     }
@@ -113,8 +100,6 @@ public class PacketManager extends Module implements Menu {
     private void setKeybind(int key) {
         Config.setProperty(baseConfig + ".keybind", String.valueOf(key));
     }
-
-    // ── Outbound interception (called from ConnectionMixin) ─────────
 
     public boolean captureOutbound(Packet<?> packet) {
         if (!isActive()) return false;
@@ -124,7 +109,6 @@ public class PacketManager extends Module implements Menu {
         seenOutboundTypes.add(name);
 
         if (delayOutbound) {
-            // If filter is non-empty, only delay matching packets
             if (!delayFilter.isEmpty() && !delayFilter.contains(name)) {
                 return false;
             }
@@ -143,8 +127,6 @@ public class PacketManager extends Module implements Menu {
             seenInboundTypes.add(name);
         }
     }
-
-    // ── Lifecycle ───────────────────────────────────────────────────
 
     @Override
     public void onActivate() {
@@ -180,13 +162,9 @@ public class PacketManager extends Module implements Menu {
         Config.setProperty(baseConfig + ".delayFilter", String.join(",", delayFilter));
     }
 
-    // ── Events ──────────────────────────────────────────────────────
-
     @EventHandler
     private void onGameJoin(GameJoinedEvent event) {
         receivedPacketTypes.clear();
-        // Only run missing packet detection on multiplayer — integrated server
-        // bypasses the Netty pipeline for many packets, causing false positives.
         var mc = Minecraft.getInstance();
         if (mc.getCurrentServer() != null && !mc.isLocalServer()) {
             joinTickCounter = 0;
@@ -195,7 +173,6 @@ public class PacketManager extends Module implements Menu {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        // Missing packet watchdog
         if (joinTickCounter >= 0) {
             joinTickCounter++;
             if (joinTickCounter >= GRACE_TICKS) {
@@ -204,7 +181,6 @@ public class PacketManager extends Module implements Menu {
             }
         }
 
-        // Keybind toggle
         int key = getKeybind();
         if (key != GLFW.GLFW_KEY_UNKNOWN) {
             boolean down = KeybindUtil.isKeyDown(key);
@@ -221,8 +197,6 @@ public class PacketManager extends Module implements Menu {
         outboundQueue.clear();
     }
 
-    // ── Missing packet check ────────────────────────────────────────
-
     private void checkMissingPackets() {
         List<String> missing = new ArrayList<>();
         for (Class<?> expected : EXPECTED_PACKETS) {
@@ -236,24 +210,22 @@ public class PacketManager extends Module implements Menu {
         var mc = Minecraft.getInstance();
         if (!missing.isEmpty()) {
             MessageUtils.sendMessage(mc, Component.literal("Missing packets detected!")
-                    .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+                .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
 
             for (String pkt : missing) {
-                MessageUtils.sendMessage(mc, Component.literal("  \u2717 " + pkt)
-                        .withStyle(ChatFormatting.YELLOW));
+                MessageUtils.sendMessage(mc, Component.literal("  ✗ " + pkt)
+                    .withStyle(ChatFormatting.YELLOW));
             }
 
             MessageUtils.sendMessage(mc, Component.literal(
                     "Server may be running non-standard software or is misconfigured.")
-                    .withStyle(ChatFormatting.GRAY));
+                .withStyle(ChatFormatting.GRAY));
 
             SageFang.LOGGER.warn("[PacketManager] Missing expected packets: {}", missing);
         } else {
             SageFang.LOGGER.info("[PacketManager] All expected packets received");
         }
     }
-
-    // ── Helpers ──────────────────────────────────────────────────────
 
     private void logPacket(String direction, String name) {
         if (!logPackets) return;
@@ -270,8 +242,6 @@ public class PacketManager extends Module implements Menu {
         return full;
     }
 
-    // ── ImGui ───────────────────────────────────────────────────────
-
     @Override
     public void frame(ImGuiIO io) {
         try {
@@ -281,10 +251,11 @@ public class PacketManager extends Module implements Menu {
             ImGui.setNextWindowBgAlpha(0.55f);
             ImGui.begin("Packet Manager", flags);
 
-            if (ImGui.checkbox("Enabled##pmEnabled", isActive())) { toggle(); }
+            if (ImGui.checkbox("Enabled##pmEnabled", isActive())) {
+                toggle();
+            }
             ImGui.separator();
 
-            // ── Keybind ──
             int result = KeybindUtil.renderKeybindButton("Toggle", "pmKeybind", getKeybind(), awaitingKeybind);
             if (result == KeybindUtil.START_LISTENING) {
                 awaitingKeybind = true;
@@ -296,7 +267,6 @@ public class PacketManager extends Module implements Menu {
                 awaitingKeybind = false;
             }
 
-            // ── Controls ──
             ImGui.separatorText("Controls");
 
             if (ImGui.checkbox("Delay Outbound##pmDelayOut", delayOutbound)) {
@@ -311,7 +281,6 @@ public class PacketManager extends Module implements Menu {
                 Config.setProperty(baseConfig + ".logPackets", String.valueOf(logPackets));
             }
 
-            // ── Delay Filter ──
             ImGui.separatorText("Delay Filter");
             if (delayFilter.isEmpty()) {
                 ImGui.textDisabled("All outbound packets delayed (no filter)");
@@ -319,7 +288,6 @@ public class PacketManager extends Module implements Menu {
                 ImGui.text("Only delaying " + delayFilter.size() + " packet type(s):");
             }
 
-            // Current filter entries with remove buttons
             String toRemove = null;
             for (String entry : delayFilter) {
                 ImGui.pushStyleColor(ImGuiCol.Text, 1.0f, 0.75f, 0.55f, 1.0f);
@@ -335,7 +303,6 @@ public class PacketManager extends Module implements Menu {
                 persistDelayFilter();
             }
 
-            // Add from seen types — collapsible tree node
             if (ImGui.treeNode("Add Packet Type##pmAddFilter")) {
                 ImGui.inputText("Search##pmDelaySearch", delayFilterInput);
                 String search = delayFilterInput.get().trim().toLowerCase();
@@ -363,7 +330,6 @@ public class PacketManager extends Module implements Menu {
                 persistDelayFilter();
             }
 
-            // ── Queue Actions ──
             ImGui.separatorText("Outbound Queue");
 
             if (ImGui.button("Flush##pmFlush")) {
@@ -376,7 +342,6 @@ public class PacketManager extends Module implements Menu {
                 SageFang.LOGGER.info("[PacketManager] Dropped {} outbound packets", count);
             }
 
-            // Queue preview
             if (!outboundQueue.isEmpty()) {
                 ImGui.beginChild("##pmOutQ", 400, 100, true, ImGuiWindowFlags.None);
                 int i = 0;
@@ -392,7 +357,6 @@ public class PacketManager extends Module implements Menu {
                 ImGui.endChild();
             }
 
-            // ── Packet Log ──
             ImGui.separatorText("Packet Log");
 
             ImGui.inputText("Filter##pmFilter", filterText);
@@ -416,7 +380,6 @@ public class PacketManager extends Module implements Menu {
                     ImGui.text(entry.direction() + " " + entry.name());
                     ImGui.popStyleColor();
 
-                    // Right-click on outbound entries to add to delay filter
                     if (isOut && ImGui.isItemHovered() && ImGui.isMouseClicked(1)) {
                         if (!delayFilter.contains(entry.name())) {
                             delayFilter.add(entry.name());
@@ -442,8 +405,7 @@ public class PacketManager extends Module implements Menu {
         }
     }
 
-    // ── Records ─────────────────────────────────────────────────────
-
     public record QueuedPacket(Packet<?> packet, long timestamp) {}
+
     record PacketLogEntry(String direction, String name, long timestamp) {}
 }

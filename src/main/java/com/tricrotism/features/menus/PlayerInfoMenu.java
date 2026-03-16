@@ -4,8 +4,8 @@ import com.tricrotism.SageFang;
 import com.tricrotism.api.menus.Menu;
 import com.tricrotism.config.SageFangConfig;
 import com.tricrotism.utils.GraphHistory;
-import com.tricrotism.utils.NumberUtils;
 import com.tricrotism.utils.GraphRenderer;
+import com.tricrotism.utils.NumberUtils;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
@@ -83,6 +83,17 @@ public class PlayerInfoMenu implements Menu {
                         ImGui.text("Brand");
                         ImGui.sameLine();
                         ImGui.text(String.valueOf(brand));
+
+                        var detect = com.tricrotism.modules.clientdetect.ClientDetect.instance;
+                        int totalPlayers = Minecraft.getInstance().getConnection() != null ? Minecraft.getInstance().getConnection().getOnlinePlayers().size() : 0;
+                        if (detect.isActive()) {
+                            int labyCount = detect.getLabyModUserCount();
+                            if (labyCount > 0 || detect.isLabyModConnected()) {
+                                ImGui.text("LabyMod");
+                                ImGui.sameLine();
+                                ImGui.text(totalPlayers > 0 ? labyCount + "/" + totalPlayers + " (" + (int) Math.round(100.0 * labyCount / totalPlayers) + "%)" : labyCount + " users");
+                            }
+                        }
                     }
                 }
 
@@ -112,8 +123,8 @@ public class PlayerInfoMenu implements Menu {
                     }
                     if (ImGui.selectable("Bukkit Location")) {
                         ImGui.setClipboardText(String.format(
-                                "new Location(Bukkit.getWorld(\"%s\"), %s, %s, %s, %sf, %sf)",
-                                worldName, x, y, z, mc.player.getYRot(), mc.player.getXRot()));
+                            "new Location(Bukkit.getWorld(\"%s\"), %s, %s, %s, %sf, %sf)",
+                            worldName, x, y, z, mc.player.getYRot(), mc.player.getXRot()));
                     }
                     ImGui.endPopup();
                 }
@@ -121,16 +132,18 @@ public class PlayerInfoMenu implements Menu {
                 // Push client metrics for graphs
                 GraphHistory.INSTANCE.ensureCapacity();
                 GraphHistory.INSTANCE.pushClientMetrics(
-                        Minecraft.getInstance().getFps(),
-                        memoryUsed / (1024f * 1024f)
+                    Minecraft.getInstance().getFps(),
+                    memoryUsed / (1024f * 1024f)
                 );
 
                 // Graphs section
                 if (SageFangConfig.isShowGraphs() && GraphHistory.INSTANCE.fps.size() > 1) {
                     ImGui.separator();
                     if (ImGui.collapsingHeader("Graphs##clientGraphs")) {
-                       if (SageFangConfig.isGraphFps()) GraphRenderer.plotLines("FPS", GraphHistory.INSTANCE.fps, 0f, Float.NaN);
-                       if (SageFangConfig.isGraphClientMemory()) GraphRenderer.plotLines("Client Memory (MB)", GraphHistory.INSTANCE.clientMemory, 0f, Float.NaN);
+                        if (SageFangConfig.isGraphFps())
+                            GraphRenderer.plotLines("FPS", GraphHistory.INSTANCE.fps, 0f, Float.NaN);
+                        if (SageFangConfig.isGraphClientMemory())
+                            GraphRenderer.plotLines("Client Memory (MB)", GraphHistory.INSTANCE.clientMemory, 0f, Float.NaN);
                     }
                 }
             } else {

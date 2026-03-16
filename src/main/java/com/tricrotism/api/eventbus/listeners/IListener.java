@@ -6,6 +6,7 @@ package com.tricrotism.api.eventbus.listeners;
 public interface IListener {
     /**
      * Calls the listener with the specified event.
+     *
      * @param event Event to pass in
      */
     void call(Object event);

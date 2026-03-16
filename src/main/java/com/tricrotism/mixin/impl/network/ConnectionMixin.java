@@ -2,6 +2,7 @@ package com.tricrotism.mixin.impl.network;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.config.SageFangConfig;
+import com.tricrotism.features.commands.PluginsCommand;
 import com.tricrotism.modules.blink.Blink;
 import com.tricrotism.modules.packets.PacketManager;
 import io.netty.channel.ChannelFutureListener;
@@ -9,6 +10,7 @@ import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
 import net.minecraft.network.protocol.game.ServerboundContainerButtonClickPacket;
 import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
@@ -20,8 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Connection.class)
 public class ConnectionMixin {
-
-    // ── Outbound ────────────────────────────────────────────────────
 
     @Inject(at = @At("HEAD"), method = "send(Lnet/minecraft/network/protocol/Packet;Lio/netty/channel/ChannelFutureListener;Z)V", cancellable = true)
     public void send(Packet<?> packet, @Nullable ChannelFutureListener channelFutureListener, boolean bl, CallbackInfo ci) {
@@ -65,10 +65,11 @@ public class ConnectionMixin {
         }
     }
 
-    // ── Inbound ─────────────────────────────────────────────────────
-
     @Inject(at = @At("HEAD"), method = "channelRead0(Lio/netty/channel/ChannelHandlerContext;Lnet/minecraft/network/protocol/Packet;)V")
     protected void onPacketReceived(ChannelHandlerContext ctx, Packet<?> packet, CallbackInfo ci) {
         PacketManager.instance.observeInbound(packet);
+        if (packet instanceof ClientboundCommandSuggestionsPacket suggestions) {
+            PluginsCommand.onSuggestionsPacket(suggestions);
+        }
     }
 }

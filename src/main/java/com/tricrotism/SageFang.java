@@ -8,20 +8,21 @@ import com.tricrotism.data.ServerInfo;
 import com.tricrotism.data.ServerInfoCustomPayload;
 import com.tricrotism.events.ui.MenuRegistrationEvent;
 import com.tricrotism.features.commands.SFCommandManager;
-import com.tricrotism.features.menus.MiscMenu;
 import com.tricrotism.features.menus.InfoMenu;
 import com.tricrotism.features.menus.PlayerInfoMenu;
 import com.tricrotism.features.menus.ServerInfoMenu;
 import com.tricrotism.features.menus.SettingsMenu;
-import com.tricrotism.modules.crash.SkillCrash;
-import com.tricrotism.modules.crash.OffhandCrash;
 import com.tricrotism.modules.blink.Blink;
-import com.tricrotism.modules.packets.PacketManager;
+import com.tricrotism.modules.clientdetect.ClientDetect;
+import com.tricrotism.modules.crash.*;
+import com.tricrotism.modules.freelook.FreeLook;
+import com.tricrotism.modules.ghost.GhostBlock;
 import com.tricrotism.modules.items.ItemViewer;
 import com.tricrotism.modules.macros.ChatMacros;
-import com.tricrotism.modules.ghost.GhostBlock;
+import com.tricrotism.modules.math.MathChat;
+import com.tricrotism.modules.packets.PacketManager;
+import com.tricrotism.modules.zoom.Zoom;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.protocol.Packet;
@@ -50,12 +51,12 @@ public class SageFang implements ModInitializer {
 
         PayloadTypeRegistry.playS2C().register(ServerInfoCustomPayload.ID, ServerInfoCustomPayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(
-                ServerInfoCustomPayload.ID,
-                (payload, ctx) -> lastServerInfo = payload.serverInfo()
+            ServerInfoCustomPayload.ID,
+            (payload, ctx) -> lastServerInfo = payload.serverInfo()
         );
 
         EVENT_BUS.registerLambdaFactory("com.tricrotism", (lookupInMethod, clazz) ->
-                (MethodHandles.Lookup) lookupInMethod.invoke(null, clazz, MethodHandles.lookup()));
+            (MethodHandles.Lookup) lookupInMethod.invoke(null, clazz, MethodHandles.lookup()));
 
         EVENT_BUS.subscribe(this);
         EVENT_BUS.subscribe(SkillCrash.instance);
@@ -65,25 +66,39 @@ public class SageFang implements ModInitializer {
         EVENT_BUS.subscribe(ItemViewer.instance);
         EVENT_BUS.subscribe(ChatMacros.instance);
         EVENT_BUS.subscribe(GhostBlock.instance);
+        EVENT_BUS.subscribe(Zoom.instance);
+        EVENT_BUS.subscribe(FreeLook.instance);
+        EVENT_BUS.subscribe(MathChat.instance);
+        EVENT_BUS.subscribe(ClientDetect.instance);
+        EVENT_BUS.subscribe(PositionCrash.instance);
+        EVENT_BUS.subscribe(BookCrash.instance);
+        EVENT_BUS.subscribe(CreativeExploit.instance);
+        EVENT_BUS.subscribe(PacketFlood.instance);
 
-        ClientCommandRegistrationCallback.EVENT.register(((SFCommandManager::register)));
+        SFCommandManager.init();
     }
 
     @EventHandler
     private void onMenuRegistration(MenuRegistrationEvent event) {
         event.registerAll(
-                new SettingsMenu(),
-                new ServerInfoMenu(),
-                new InfoMenu(),
-                new MiscMenu(),
-                new PlayerInfoMenu(),
-                SkillCrash.instance,
-                OffhandCrash.instance,
-                Blink.instance,
-                PacketManager.instance,
-                ItemViewer.instance,
-                ChatMacros.instance,
-                GhostBlock.instance
+            new SettingsMenu(),
+            new ServerInfoMenu(),
+            new InfoMenu(),
+            new PlayerInfoMenu(),
+            SkillCrash.instance,
+            OffhandCrash.instance,
+            Blink.instance,
+            PacketManager.instance,
+            ItemViewer.instance,
+            ChatMacros.instance,
+            GhostBlock.instance,
+            Zoom.instance,
+            FreeLook.instance,
+            MathChat.instance,
+            PositionCrash.instance,
+            BookCrash.instance,
+            CreativeExploit.instance,
+            PacketFlood.instance
         );
     }
 

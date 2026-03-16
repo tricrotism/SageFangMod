@@ -28,6 +28,7 @@ public class Blink extends Module implements Menu {
     public static final Blink instance = new Blink();
 
     private final Queue<Packet<?>> packetQueue = new ConcurrentLinkedQueue<>();
+    private final BlinkRenderer renderer = new BlinkRenderer();
 
     @Getter
     private volatile boolean flushing;
@@ -36,10 +37,9 @@ public class Blink extends Module implements Menu {
     private boolean keyWasDown;
 
     public Blink() {
-        super("blink", "Blink", "Queue outbound packets, replay on disable.");
+        super("blink", "Blink", "Queue outbound packets, replay on disable.", "Network");
+        renderer.register();
     }
-
-    // ── Packet interception (called from ConnectionMixin) ───────────
 
     public boolean capturePacket(Packet<?> packet) {
         if (!isActive() || flushing) return false;
@@ -51,16 +51,16 @@ public class Blink extends Module implements Menu {
         return packetQueue.size();
     }
 
-    // ── Lifecycle ───────────────────────────────────────────────────
-
     @Override
     public void onActivate() {
         packetQueue.clear();
+        renderer.onActivate();
         SageFang.LOGGER.info("[Blink] Activated — capturing packets");
     }
 
     @Override
     public void onDeactivate() {
+        renderer.onDeactivate();
         flush();
     }
 
@@ -87,10 +87,12 @@ public class Blink extends Module implements Menu {
         SageFang.LOGGER.info("[Blink] Flush complete");
     }
 
-    // ── Events ──────────────────────────────────────────────────────
-
     @EventHandler
     private void onTick(TickEvent.Post event) {
+        if (isActive()) {
+            renderer.onTick();
+        }
+
         int key = getKeybind();
         if (key == GLFW.GLFW_KEY_UNKNOWN) return;
 
@@ -108,17 +110,13 @@ public class Blink extends Module implements Menu {
         }
     }
 
-    // ── Keybind config ──────────────────────────────────────────────
-
     private int getKeybind() {
-        return Config.getInt(baseConfig + ".keybind", GLFW.GLFW_KEY_B);
+        return Config.getInt(baseConfig + ".keybind", GLFW.GLFW_KEY_O);
     }
 
     private void setKeybind(int key) {
         Config.setProperty(baseConfig + ".keybind", String.valueOf(key));
     }
-
-    // ── ImGui menu ──────────────────────────────────────────────────
 
     @Override
     public void frame(ImGuiIO io) {
@@ -139,7 +137,6 @@ public class Blink extends Module implements Menu {
 
             ImGui.separator();
 
-            // Keybind
             int result = KeybindUtil.renderKeybindButton("Toggle", "blinkKeybind", getKeybind(), awaitingKeybind);
             if (result == KeybindUtil.START_LISTENING) {
                 awaitingKeybind = true;

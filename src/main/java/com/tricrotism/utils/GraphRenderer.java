@@ -23,9 +23,9 @@ public final class GraphRenderer {
 
         float effectiveMax = Float.isNaN(yMax) ? Float.MAX_VALUE : yMax;
         ImGui.plotLines("##" + label, data, data.length, 0,
-                label + ": " + String.format("%.1f", buffer.last()),
-                yMin, effectiveMax,
-                SageFangConfig.getGraphWidth(), SageFangConfig.getGraphHeight());
+            label + ": " + String.format("%.1f", buffer.last()),
+            yMin, effectiveMax,
+            SageFangConfig.getGraphWidth(), SageFangConfig.getGraphHeight());
     }
 
     /**
@@ -39,7 +39,7 @@ public final class GraphRenderer {
         int h = SageFangConfig.getGraphHeight();
 
         if (ImPlot.beginPlot(label, w, h,
-                ImPlotFlags.NoLegend | ImPlotFlags.NoMouseText | ImPlotFlags.NoInputs | ImPlotFlags.NoFrame)) {
+            ImPlotFlags.NoLegend | ImPlotFlags.NoMouseText | ImPlotFlags.NoInputs | ImPlotFlags.NoFrame)) {
             ImPlot.setupAxisLimits(ImPlotAxis.X1, 0, SageFangConfig.getGraphHistory(), ImPlotCond.Always);
             ImPlot.setupAxisLimits(ImPlotAxis.Y1, yMin, yMax, ImPlotCond.Always);
             ImPlot.plotLine(label, values);

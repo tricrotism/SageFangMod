@@ -9,7 +9,7 @@ public class PacketUtils {
     public static boolean checkNaN(String axis, String name, double value, String packet, CallbackInfo ci) {
         if (Double.isNaN(value)) {
             MessageUtils.sendMessage(Minecraft.getInstance(),
-                    String.format("You have received an invalid %s %s \"%s\" from %s!", axis, name, value, packet));
+                String.format("You have received an invalid %s %s \"%s\" from %s!", axis, name, value, packet));
             ci.cancel();
             return true;
         }
@@ -19,7 +19,7 @@ public class PacketUtils {
     public static boolean checkNaN(String axis, String name, float value, String packet, CallbackInfo ci) {
         if (Float.isNaN(value)) {
             MessageUtils.sendMessage(Minecraft.getInstance(),
-                    String.format("You have received an invalid %s %s \"%f\" from %s!", axis, name, value, packet));
+                String.format("You have received an invalid %s %s \"%f\" from %s!", axis, name, value, packet));
             ci.cancel();
             return true;
         }
@@ -29,7 +29,7 @@ public class PacketUtils {
     public static boolean checkInfinite(String axis, String name, double value, String packet, CallbackInfo ci) {
         if (Double.isInfinite(value)) {
             MessageUtils.sendMessage(Minecraft.getInstance(),
-                    String.format("You have received an infinite %s %s \"%s\" from %s!", axis, name, value, packet));
+                String.format("You have received an infinite %s %s \"%s\" from %s!", axis, name, value, packet));
             ci.cancel();
             return true;
         }
@@ -39,7 +39,7 @@ public class PacketUtils {
     public static boolean checkInfinite(String axis, String name, float value, String packet, CallbackInfo ci) {
         if (Float.isInfinite(value)) {
             MessageUtils.sendMessage(Minecraft.getInstance(),
-                    String.format("You have received an infinite %s %s \"%f\" from %s!", axis, name, value, packet));
+                String.format("You have received an infinite %s %s \"%f\" from %s!", axis, name, value, packet));
             ci.cancel();
             return true;
         }

@@ -6,6 +6,7 @@ package com.tricrotism.api.eventbus;
 public interface ICancellable {
     /**
      * Sets if this event is cancelled.
+     *
      * @param cancelled Is cancelled
      */
     void setCancelled(boolean cancelled);
@@ -13,7 +14,7 @@ public interface ICancellable {
     /**
      * Cancels this event.
      */
-    default void cancel() { setCancelled(true); }
+    default void cancel() {setCancelled(true);}
 
     /**
      * @return True if this event is cancelled.

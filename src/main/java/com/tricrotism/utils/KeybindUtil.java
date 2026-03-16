@@ -12,14 +12,22 @@ public final class KeybindUtil {
     private KeybindUtil() {}
 
     // Return codes for renderKeybindButton
-    /** No change this frame. */
+    /**
+     * No change this frame.
+     */
     public static final int NO_CHANGE = Integer.MIN_VALUE;
-    /** User clicked the button — caller should enter awaiting mode. */
+    /**
+     * User clicked the button — caller should enter awaiting mode.
+     */
     public static final int START_LISTENING = Integer.MIN_VALUE + 1;
-    /** User pressed Escape — caller should clear the bind. */
+    /**
+     * User pressed Escape — caller should clear the bind.
+     */
     public static final int CLEAR_BIND = Integer.MIN_VALUE + 2;
 
-    /** Human-readable key name. Returns "None" for GLFW_KEY_UNKNOWN. */
+    /**
+     * Human-readable key name. Returns "None" for GLFW_KEY_UNKNOWN.
+     */
     public static String keyName(int key) {
         if (key == GLFW.GLFW_KEY_UNKNOWN) return "None";
         String name = GLFW.glfwGetKeyName(key, 0);
@@ -56,15 +64,20 @@ public final class KeybindUtil {
         };
     }
 
-    /** Returns true if the key is currently held down. */
+    /**
+     * Returns true if the key is currently held down and no screen is open.
+     * Prevents keybinds from firing while typing in chat, signs, etc.
+     */
     public static boolean isKeyDown(int key) {
         if (key == GLFW.GLFW_KEY_UNKNOWN) return false;
+        if (Minecraft.getInstance().screen != null) return false;
         long window = Minecraft.getInstance().getWindow().handle();
         return GLFW.glfwGetKey(window, key) == GLFW.GLFW_PRESS;
     }
 
     /**
      * Scans all keys for the first one currently pressed.
+     *
      * @return GLFW key code if a key is pressed, CLEAR_BIND if escape, NO_CHANGE if nothing.
      */
     public static int scanForKeyPress() {
@@ -82,7 +95,7 @@ public final class KeybindUtil {
      * Renders a keybind button + label. Handles scan internally when awaiting.
      *
      * @return START_LISTENING if button clicked, CLEAR_BIND if escape pressed,
-     *         a GLFW key code if a key was bound, or NO_CHANGE.
+     * a GLFW key code if a key was bound, or NO_CHANGE.
      */
     public static int renderKeybindButton(String label, String imguiId, int currentKey, boolean awaiting) {
         String btnText = awaiting ? "Press a key..." : keyName(currentKey);

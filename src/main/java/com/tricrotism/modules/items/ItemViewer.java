@@ -14,9 +14,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.TypedDataComponent;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -26,22 +26,30 @@ import java.util.Map;
 
 /**
  * ImGui window for viewing and editing item data components on the held item.
+ * <p>
+ * TODO: Redo, it's fucking dogshit atm
  */
 public class ItemViewer extends Module implements Menu {
 
     public static final ItemViewer instance = new ItemViewer();
 
-    /** Edit buffers keyed by component name. */
+    /**
+     * Edit buffers keyed by component name.
+     */
     private final Map<String, ImString> editBuffers = new HashMap<>();
 
-    /** Tracks what item the buffers were built for, so we rebuild on change. */
+    /**
+     * Tracks what item the buffers were built for, so we rebuild on change.
+     */
     private int lastItemHash;
 
-    /** Per-component error messages from failed parses. */
+    /**
+     * Per-component error messages from failed parses.
+     */
     private final Map<String, String> errors = new HashMap<>();
 
     public ItemViewer() {
-        super("itemviewer", "Item Viewer", "View and edit item data components.");
+        super("itemviewer", "Item Viewer", "View and edit item data components.", "Utility");
     }
 
     @Override
@@ -56,7 +64,9 @@ public class ItemViewer extends Module implements Menu {
             int flags = ImGuiWindowFlags.AlwaysAutoResize;
             ImGui.begin("Item Viewer", flags);
 
-            if (ImGui.checkbox("Enabled##ivEnabled", isActive())) { toggle(); }
+            if (ImGui.checkbox("Enabled##ivEnabled", isActive())) {
+                toggle();
+            }
             ImGui.separator();
 
             ItemStack stack = player.getMainHandItem();
@@ -66,7 +76,6 @@ public class ItemViewer extends Module implements Menu {
                 return;
             }
 
-            // Rebuild edit buffers when held item changes.
             int currentHash = ItemStack.hashItemAndComponents(stack);
             if (currentHash != lastItemHash) {
                 editBuffers.clear();
@@ -74,7 +83,6 @@ public class ItemViewer extends Module implements Menu {
                 lastItemHash = currentHash;
             }
 
-            // Header info
             ImGui.text("Item: " + stack.getHoverName().getString());
             ResourceLocation itemKey = BuiltInRegistries.ITEM.getKey(stack.getItem());
             ImGui.text("ID: " + (itemKey != null ? itemKey.toString() : "unknown"));
@@ -105,7 +113,6 @@ public class ItemViewer extends Module implements Menu {
             return;
         }
 
-        // Encode current value to SNBT for display.
         String snbt;
         if (transient_) {
             snbt = String.valueOf(component.value());
@@ -116,7 +123,6 @@ public class ItemViewer extends Module implements Menu {
 
         ImGui.textWrapped(snbt);
 
-        // Editable field for non-transient components.
         if (!transient_) {
             if (isActive()) {
                 ImString buf = editBuffers.computeIfAbsent(name, k -> new ImString(snbt, 4096));
@@ -130,7 +136,6 @@ public class ItemViewer extends Module implements Menu {
                 ImGui.sameLine();
                 if (ImGui.button("Apply##" + name)) {
                     applyEdit(stack, type, codec, name, buf.get());
-                    // Update hash so buffers don't immediately reset from our own change.
                     lastItemHash = ItemStack.hashItemAndComponents(stack);
                 }
 
@@ -166,13 +171,11 @@ public class ItemViewer extends Module implements Menu {
      */
     private <T> void applyEdit(ItemStack stack, DataComponentType<T> type, Codec<T> codec, String name, String input) {
         try {
-            // TagParser.parseCompoundFully expects a compound. Wrap the value so we can parse arbitrary tag types.
             Tag tag;
             try {
                 CompoundTag compound = TagParser.parseCompoundFully("{v:" + input + "}");
                 tag = compound.get("v");
             } catch (Exception e) {
-                // Fallback: try parsing as-is (for compound tags the user typed with braces).
                 try {
                     tag = TagParser.parseCompoundFully(input);
                 } catch (Exception e2) {

@@ -3,11 +3,7 @@ package com.tricrotism.features.menus;
 import com.tricrotism.SageFang;
 import com.tricrotism.api.menus.Menu;
 import com.tricrotism.config.SageFangConfig;
-import com.tricrotism.utils.GraphHistory;
-import com.tricrotism.utils.GraphRenderer;
-import com.tricrotism.utils.MetricColors;
-import com.tricrotism.utils.NumberUtils;
-import com.tricrotism.utils.TimeUtils;
+import com.tricrotism.utils.*;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
@@ -52,9 +48,9 @@ public class InfoMenu implements Menu {
                 ImGui.text("FPS: " + mc.getFps());
 
                 String xyzFormat = String.format("%.2f, %.2f, %.2f",
-                        Math.round(mc.player.getX() * 100D) / 100D,
-                        Math.round(mc.player.getY() * 100D) / 100D,
-                        Math.round(mc.player.getZ() * 100D) / 100D);
+                    Math.round(mc.player.getX() * 100D) / 100D,
+                    Math.round(mc.player.getY() * 100D) / 100D,
+                    Math.round(mc.player.getZ() * 100D) / 100D);
                 ImGui.text("Position: ");
                 ImGui.sameLine();
                 ImGui.text(xyzFormat);
@@ -111,8 +107,8 @@ public class InfoMenu implements Menu {
                     }
                     if (ImGui.selectable("Bukkit Location")) {
                         ImGui.setClipboardText(String.format(
-                                "new Location(Bukkit.getWorld(\"%s\"), %s, %s, %s, %sf, %sf)",
-                                worldName, x, y, z, mc.player.getYRot(), mc.player.getXRot()));
+                            "new Location(Bukkit.getWorld(\"%s\"), %s, %s, %s, %sf, %sf)",
+                            worldName, x, y, z, mc.player.getYRot(), mc.player.getXRot()));
                     }
                     ImGui.endPopup();
                 }
@@ -132,26 +128,26 @@ public class InfoMenu implements Menu {
                 } else if (lastServerInfo == null) {
                     ImGui.text("No server info");
                 } else {
-                    ImGui.text("Instance: " + lastServerInfo.getInstance());
-                    ImGui.text("World: " + lastServerInfo.getWorld());
-                    ImGui.text("Uptime: " + TimeUtils.getTimeAmount(lastServerInfo.getUptime(), true, false));
-                    ImGui.text("Entities: " + lastServerInfo.getEntityCount());
-                    ImGui.text("Chunks: " + lastServerInfo.getLoadedChunks());
-                    ImGui.textColored(MetricColors.tps(lastServerInfo.getTps()),
-                            "TPS: " + Math.round(lastServerInfo.getTps() * 100.0f) / 100.0f);
-                    ImGui.textColored(MetricColors.mspt(lastServerInfo.getMspt()),
-                            "MSPT: " + Math.round(lastServerInfo.getMspt() * 100.0f) / 100.0f);
-                    ImGui.text("Memory: " + NumberUtils.formatMemorySize(lastServerInfo.getMemoryUsed())
-                            + "/" + NumberUtils.formatMemorySize(lastServerInfo.getMemoryMax()));
-                    ImGui.text("Java: " + lastServerInfo.getJavaVersion());
-                    ImGui.text("Host: " + lastServerInfo.getHostname());
-                    ImGui.text("Players: " + NumberUtils.format(lastServerInfo.getOnlinePlayers()));
-                    ImGui.text("Logins: " + NumberUtils.format(lastServerInfo.getLogins()));
+                    ImGui.text("Instance: " + lastServerInfo.instance());
+                    ImGui.text("World: " + lastServerInfo.world());
+                    ImGui.text("Uptime: " + TimeUtils.getTimeAmount(lastServerInfo.uptime(), true, false));
+                    ImGui.text("Entities: " + lastServerInfo.entityCount());
+                    ImGui.text("Chunks: " + lastServerInfo.loadedChunks());
+                    ImGui.textColored(MetricColors.tps(lastServerInfo.tps()),
+                        "TPS: " + Math.round(lastServerInfo.tps() * 100.0f) / 100.0f);
+                    ImGui.textColored(MetricColors.mspt(lastServerInfo.mspt()),
+                        "MSPT: " + Math.round(lastServerInfo.mspt() * 100.0f) / 100.0f);
+                    ImGui.text("Memory: " + NumberUtils.formatMemorySize(lastServerInfo.memoryUsed())
+                        + "/" + NumberUtils.formatMemorySize(lastServerInfo.memoryMax()));
+                    ImGui.text("Java: " + lastServerInfo.javaVersion());
+                    ImGui.text("Host: " + lastServerInfo.hostname());
+                    ImGui.text("Players: " + NumberUtils.format(lastServerInfo.onlinePlayers()));
+                    ImGui.text("Logins: " + NumberUtils.format(lastServerInfo.logins()));
 
                     // Push server metrics
-                    float serverMemMb = lastServerInfo.getMemoryUsed() / (1024f * 1024f);
+                    float serverMemMb = lastServerInfo.memoryUsed() / (1024f * 1024f);
                     GraphHistory.INSTANCE.pushServerMetrics(
-                            lastServerInfo.getTps(), lastServerInfo.getMspt(), serverMemMb);
+                        lastServerInfo.tps(), lastServerInfo.mspt(), serverMemMb);
                 }
             }
 
@@ -165,13 +161,15 @@ public class InfoMenu implements Menu {
                     if (ImGui.collapsingHeader("Graphs")) {
                         if (playerShown) {
                             if (SageFangConfig.isGraphFps()) GraphRenderer.plotImPlot("FPS", gh.fps, 0, 300);
-                            if (SageFangConfig.isGraphClientMemory()) GraphRenderer.plotImPlot("Client Memory (MB)", gh.clientMemory, 0, Runtime.getRuntime().maxMemory() / (1024f * 1024f));
+                            if (SageFangConfig.isGraphClientMemory())
+                                GraphRenderer.plotImPlot("Client Memory (MB)", gh.clientMemory, 0, Runtime.getRuntime().maxMemory() / (1024f * 1024f));
                         }
                         if (serverShown && lastServerInfo != null) {
                             if (SageFangConfig.isGraphTps()) GraphRenderer.plotImPlot("TPS", gh.tps, 0, 20);
                             if (SageFangConfig.isGraphMspt()) GraphRenderer.plotImPlot("MSPT", gh.mspt, 0, 100);
-                            if (SageFangConfig.isGraphServerMemory()) GraphRenderer.plotImPlot("Server Memory (MB)", gh.serverMemory, 0,
-                                    lastServerInfo.getMemoryMax() / (1024f * 1024f));
+                            if (SageFangConfig.isGraphServerMemory())
+                                GraphRenderer.plotImPlot("Server Memory (MB)", gh.serverMemory, 0,
+                                    lastServerInfo.memoryMax() / (1024f * 1024f));
                         }
                     }
                 }

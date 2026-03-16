@@ -6,12 +6,12 @@ import com.tricrotism.api.menus.Menu;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
+import com.tricrotism.utils.KeybindUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImString;
 import io.avaje.config.Config;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -21,7 +21,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import org.lwjgl.glfw.GLFW;
-import com.tricrotism.utils.KeybindUtil;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -43,21 +42,18 @@ public class GhostBlock extends Module implements Menu {
 
     private final ImString blockBuffer = new ImString(256);
 
-    // Rising-edge tracking for 3 keybinds
     private boolean placeWasDown;
     private boolean breakWasDown;
     private boolean undoWasDown;
 
-    // Keybind rebind state
-    private enum RebindTarget { NONE, PLACE, BREAK, UNDO }
+    private enum RebindTarget {NONE, PLACE, BREAK, UNDO}
+
     private RebindTarget awaitingRebind = RebindTarget.NONE;
 
     public GhostBlock() {
-        super("ghostblock", "Ghost Blocks", "Place and break blocks client-side only.");
+        super("ghostblock", "Ghost Blocks", "Place and break blocks client-side only.", "World");
         blockBuffer.set(Config.get(baseConfig + ".block", "minecraft:stone"));
     }
-
-    // ── Block selection ─────────────────────────────────────────────
 
     private BlockState getSelectedBlock() {
         String blockId = Config.get(baseConfig + ".block", "minecraft:stone");
@@ -75,8 +71,6 @@ public class GhostBlock extends Module implements Menu {
         }
         return Blocks.STONE.defaultBlockState();
     }
-
-    // ── Keybind config ──────────────────────────────────────────────
 
     private int getPlaceKeybind() {
         return Config.getInt(baseConfig + ".keybindPlace", GLFW.GLFW_KEY_RIGHT_BRACKET);
@@ -102,8 +96,6 @@ public class GhostBlock extends Module implements Menu {
         Config.setProperty(baseConfig + ".keybindUndo", String.valueOf(key));
     }
 
-    // ── Core operations ─────────────────────────────────────────────
-
     private void ghostPlace() {
         if (mc.level == null || mc.player == null) return;
         if (!(mc.hitResult instanceof BlockHitResult bhr)) return;
@@ -111,7 +103,6 @@ public class GhostBlock extends Module implements Menu {
 
         BlockPos placePos = bhr.getBlockPos().relative(bhr.getDirection());
 
-        // Don't place inside the player
         if (placePos.equals(mc.player.blockPosition()) || placePos.equals(mc.player.blockPosition().above())) {
             return;
         }
@@ -155,13 +146,10 @@ public class GhostBlock extends Module implements Menu {
         ghostPositions.clear();
     }
 
-    // ── Events ──────────────────────────────────────────────────────
-
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (!isActive()) return;
 
-        // Place keybind — rising edge
         int placeKey = getPlaceKeybind();
         {
             boolean down = KeybindUtil.isKeyDown(placeKey);
@@ -169,7 +157,6 @@ public class GhostBlock extends Module implements Menu {
             placeWasDown = down;
         }
 
-        // Break keybind — rising edge
         int breakKey = getBreakKeybind();
         {
             boolean down = KeybindUtil.isKeyDown(breakKey);
@@ -177,7 +164,6 @@ public class GhostBlock extends Module implements Menu {
             breakWasDown = down;
         }
 
-        // Undo keybind — rising edge
         int undoKey = getUndoKeybind();
         {
             boolean down = KeybindUtil.isKeyDown(undoKey);
@@ -195,8 +181,6 @@ public class GhostBlock extends Module implements Menu {
         }
     }
 
-    // ── ImGui menu ──────────────────────────────────────────────────
-
     @Override
     public void frame(ImGuiIO io) {
         try {
@@ -208,16 +192,13 @@ public class GhostBlock extends Module implements Menu {
             ImGui.setNextWindowBgAlpha(0.55f);
             ImGui.begin(title, flags);
 
-            // Toggle
             if (ImGui.checkbox("Enabled##ghostEnabled", isActive())) {
                 toggle();
             }
 
-            // Stats
             ImGui.text("Ghost blocks: " + ghostPositions.size());
             ImGui.text("Undo history: " + history.size());
 
-            // Block selector
             ImGui.separatorText("Block");
             ImGui.inputText("##ghostBlockId", blockBuffer);
             ImGui.sameLine();
@@ -228,7 +209,6 @@ public class GhostBlock extends Module implements Menu {
                 }
             }
 
-            // Clear all
             ImGui.separatorText("Actions");
             if (ImGui.button("Undo Last##ghostUndo")) {
                 undo();
@@ -238,7 +218,6 @@ public class GhostBlock extends Module implements Menu {
                 clearAll();
             }
 
-            // Keybinds
             ImGui.separatorText("Keybinds");
 
             renderKeybindButton("Place", RebindTarget.PLACE, getPlaceKeybind());
@@ -271,7 +250,8 @@ public class GhostBlock extends Module implements Menu {
                 case PLACE -> setPlaceKeybind(GLFW.GLFW_KEY_UNKNOWN);
                 case BREAK -> setBreakKeybind(GLFW.GLFW_KEY_UNKNOWN);
                 case UNDO -> setUndoKeybind(GLFW.GLFW_KEY_UNKNOWN);
-                default -> {}
+                default -> {
+                }
             }
             awaitingRebind = RebindTarget.NONE;
         } else if (result != KeybindUtil.NO_CHANGE) {
@@ -279,7 +259,8 @@ public class GhostBlock extends Module implements Menu {
                 case PLACE -> setPlaceKeybind(result);
                 case BREAK -> setBreakKeybind(result);
                 case UNDO -> setUndoKeybind(result);
-                default -> {}
+                default -> {
+                }
             }
             awaitingRebind = RebindTarget.NONE;
         }

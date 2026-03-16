@@ -56,7 +56,9 @@ public final class ConfigPersistence {
         log.info("Config persistence initialized, saving to {}", CONFIG_PATH.toAbsolutePath());
     }
 
-    /** Force an immediate save. */
+    /**
+     * Force an immediate save.
+     */
     public static void save() {
         try {
             Files.createDirectories(CONFIG_PATH.getParent());

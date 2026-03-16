@@ -1,14 +1,19 @@
 package com.tricrotism.features.commands;
 
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import org.incendo.cloud.Command;
+import org.incendo.cloud.CommandManager;
 
 /**
  * Interface for individual commands registered under /sagefang.
  */
 public interface SFCommand {
     /**
-     * Register this command's argument tree as a child of the /sagefang root.
+     * Register this command's argument tree using the Cloud command manager.
+     *
+     * @param manager the Cloud command manager
+     * @param root    a pre-built {@code /sagefang} base builder to chain from
      */
-    void register(LiteralArgumentBuilder<FabricClientCommandSource> root);
+    void register(CommandManager<FabricClientCommandSource> manager,
+                  Command.Builder<FabricClientCommandSource> root);
 }

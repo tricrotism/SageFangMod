@@ -1,7 +1,7 @@
 plugins {
-    id 'fabric-loom' version '1.11-SNAPSHOT'
+    id 'fabric-loom' version '1.15-SNAPSHOT'
     id 'maven-publish'
-    id 'com.gradleup.shadow' version '9.4.1-SNAPSHOT'
+    id 'com.gradleup.shadow' version '9.4.0'
 }
 
 version = project.mod_version
@@ -52,6 +52,9 @@ dependencies {
 
     // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Cloud command framework
+    include modImplementation("org.incendo:cloud-fabric:${project.cloud_version}")
 
     include implementation("io.github.spair:imgui-java-binding:${project.imgui_version}")
     include implementation("io.github.spair:imgui-java-lwjgl3:${project.imgui_version}")

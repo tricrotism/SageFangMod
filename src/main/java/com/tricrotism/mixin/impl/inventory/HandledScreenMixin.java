@@ -18,6 +18,7 @@ public class HandledScreenMixin {
 
     @Unique
     private static final float SCALE = 0.75f;
+
     @Inject(method = "renderSlot", at = @At("TAIL"))
     private void onRenderSlot(GuiGraphics context, Slot slot, CallbackInfo ci) {
         if (!SageFangConfig.isShouldShowSlotNumbers()) return;
@@ -29,12 +30,12 @@ public class HandledScreenMixin {
         context.pose().translate(0, 0);
         context.pose().scale(SCALE, SCALE);
         context.drawString(
-                Minecraft.getInstance().font,
-                String.valueOf(index),
-                (int) ((x + 1) * (1 / SCALE)),
-                (int) ((y + 1) * (1 / SCALE)),
-                Color.WHITE.getRGB(),
-                true
+            Minecraft.getInstance().font,
+            String.valueOf(index),
+            (int) ((x + 1) * (1 / SCALE)),
+            (int) ((y + 1) * (1 / SCALE)),
+            Color.WHITE.getRGB(),
+            true
         );
         context.pose().popMatrix();
     }

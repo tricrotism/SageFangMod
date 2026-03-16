@@ -20,7 +20,8 @@ public class PacketValidationMixin {
         if (PacketUtils.checkVec3("location", change.position(), "PlayerPositionPacket", ci)) return;
         if (PacketUtils.checkBad("xRot", "rotation", change.xRot(), "PlayerPositionPacket", ci)) return;
         if (PacketUtils.checkBad("yRot", "rotation", change.yRot(), "PlayerPositionPacket", ci)) return;
-        if (PacketUtils.checkVec3("deltaMovement", change.deltaMovement(), "PlayerPositionPacket", ci)) return;
+        if (PacketUtils.checkVec3("deltaMovement", change.deltaMovement(), "PlayerPositionPacket", ci)) {
+        }
     }
 
     @Inject(method = "handleParticleEvent", at = @At("HEAD"), cancellable = true)
@@ -37,7 +38,8 @@ public class PacketValidationMixin {
         if (PacketUtils.checkBad("xDist", "distribution", packet.getXDist(), "LevelParticlesPacket", ci)) return;
         if (PacketUtils.checkBad("yDist", "distribution", packet.getYDist(), "LevelParticlesPacket", ci)) return;
         if (PacketUtils.checkBad("zDist", "distribution", packet.getZDist(), "LevelParticlesPacket", ci)) return;
-        if (PacketUtils.checkBad("maxSpeed", "speed", packet.getMaxSpeed(), "LevelParticlesPacket", ci)) return;
+        if (PacketUtils.checkBad("maxSpeed", "speed", packet.getMaxSpeed(), "LevelParticlesPacket", ci)) {
+        }
     }
 
     @Inject(method = "handleExplosion", at = @At("HEAD"), cancellable = true)
@@ -45,7 +47,8 @@ public class PacketValidationMixin {
         if (PacketUtils.checkVec3("center", packet.center(), "ExplodePacket", ci)) return;
         if (PacketUtils.checkBad("radius", "radius", packet.radius(), "ExplodePacket", ci)) return;
         if (packet.playerKnockback().isPresent()) {
-            if (PacketUtils.checkVec3("playerKnockback", packet.playerKnockback().get(), "ExplodePacket", ci)) return;
+            if (PacketUtils.checkVec3("playerKnockback", packet.playerKnockback().get(), "ExplodePacket", ci)) {
+            }
         }
     }
 
@@ -54,7 +57,8 @@ public class PacketValidationMixin {
         if (PacketUtils.checkBad("x", "position", packet.getX(), "AddEntityPacket", ci)) return;
         if (PacketUtils.checkBad("y", "position", packet.getY(), "AddEntityPacket", ci)) return;
         if (PacketUtils.checkBad("z", "position", packet.getZ(), "AddEntityPacket", ci)) return;
-        if (PacketUtils.checkVec3("movement", packet.getMovement(), "AddEntityPacket", ci)) return;
+        if (PacketUtils.checkVec3("movement", packet.getMovement(), "AddEntityPacket", ci)) {
+        }
     }
 
     @Inject(method = "handleEntityPositionSync", at = @At("HEAD"), cancellable = true)
@@ -63,7 +67,8 @@ public class PacketValidationMixin {
         if (PacketUtils.checkVec3("position", values.position(), "EntityPositionSyncPacket", ci)) return;
         if (PacketUtils.checkVec3("deltaMovement", values.deltaMovement(), "EntityPositionSyncPacket", ci)) return;
         if (PacketUtils.checkBad("xRot", "rotation", values.xRot(), "EntityPositionSyncPacket", ci)) return;
-        if (PacketUtils.checkBad("yRot", "rotation", values.yRot(), "EntityPositionSyncPacket", ci)) return;
+        if (PacketUtils.checkBad("yRot", "rotation", values.yRot(), "EntityPositionSyncPacket", ci)) {
+        }
     }
 
     @Inject(method = "handleTeleportEntity", at = @At("HEAD"), cancellable = true)
@@ -72,30 +77,35 @@ public class PacketValidationMixin {
         if (PacketUtils.checkVec3("position", change.position(), "TeleportEntityPacket", ci)) return;
         if (PacketUtils.checkVec3("deltaMovement", change.deltaMovement(), "TeleportEntityPacket", ci)) return;
         if (PacketUtils.checkBad("xRot", "rotation", change.xRot(), "TeleportEntityPacket", ci)) return;
-        if (PacketUtils.checkBad("yRot", "rotation", change.yRot(), "TeleportEntityPacket", ci)) return;
+        if (PacketUtils.checkBad("yRot", "rotation", change.yRot(), "TeleportEntityPacket", ci)) {
+        }
     }
 
     @Inject(method = "handleSetHealth", at = @At("HEAD"), cancellable = true)
     public void handleSetHealth(ClientboundSetHealthPacket packet, CallbackInfo ci) {
         if (PacketUtils.checkBad("health", "value", packet.getHealth(), "SetHealthPacket", ci)) return;
-        if (PacketUtils.checkBad("saturation", "value", packet.getSaturation(), "SetHealthPacket", ci)) return;
+        if (PacketUtils.checkBad("saturation", "value", packet.getSaturation(), "SetHealthPacket", ci)) {
+        }
     }
 
     @Inject(method = "handleSetExperience", at = @At("HEAD"), cancellable = true)
     public void handleSetExperience(ClientboundSetExperiencePacket packet, CallbackInfo ci) {
-        if (PacketUtils.checkBad("experienceProgress", "value", packet.getExperienceProgress(), "SetExperiencePacket", ci)) return;
+        if (PacketUtils.checkBad("experienceProgress", "value", packet.getExperienceProgress(), "SetExperiencePacket", ci)) {
+        }
     }
 
     @Inject(method = "handleSoundEvent", at = @At("HEAD"), cancellable = true)
     public void handleSoundEvent(ClientboundSoundPacket packet, CallbackInfo ci) {
         if (PacketUtils.checkBad("volume", "value", packet.getVolume(), "SoundPacket", ci)) return;
-        if (PacketUtils.checkBad("pitch", "value", packet.getPitch(), "SoundPacket", ci)) return;
+        if (PacketUtils.checkBad("pitch", "value", packet.getPitch(), "SoundPacket", ci)) {
+        }
     }
 
     @Inject(method = "handleSoundEntityEvent", at = @At("HEAD"), cancellable = true)
     public void handleSoundEntityEvent(ClientboundSoundEntityPacket packet, CallbackInfo ci) {
         if (PacketUtils.checkBad("volume", "value", packet.getVolume(), "SoundEntityPacket", ci)) return;
-        if (PacketUtils.checkBad("pitch", "value", packet.getPitch(), "SoundEntityPacket", ci)) return;
+        if (PacketUtils.checkBad("pitch", "value", packet.getPitch(), "SoundEntityPacket", ci)) {
+        }
     }
 
     @Inject(method = "handleInitializeBorder", at = @At("HEAD"), cancellable = true)
@@ -103,12 +113,14 @@ public class PacketValidationMixin {
         if (PacketUtils.checkBad("newCenterX", "center", packet.getNewCenterX(), "InitializeBorderPacket", ci)) return;
         if (PacketUtils.checkBad("newCenterZ", "center", packet.getNewCenterZ(), "InitializeBorderPacket", ci)) return;
         if (PacketUtils.checkBad("oldSize", "size", packet.getOldSize(), "InitializeBorderPacket", ci)) return;
-        if (PacketUtils.checkBad("newSize", "size", packet.getNewSize(), "InitializeBorderPacket", ci)) return;
+        if (PacketUtils.checkBad("newSize", "size", packet.getNewSize(), "InitializeBorderPacket", ci)) {
+        }
     }
 
     @Inject(method = "handleSetBorderCenter", at = @At("HEAD"), cancellable = true)
     public void handleSetBorderCenter(ClientboundSetBorderCenterPacket packet, CallbackInfo ci) {
         if (PacketUtils.checkBad("newCenterX", "center", packet.getNewCenterX(), "SetBorderCenterPacket", ci)) return;
-        if (PacketUtils.checkBad("newCenterZ", "center", packet.getNewCenterZ(), "SetBorderCenterPacket", ci)) return;
+        if (PacketUtils.checkBad("newCenterZ", "center", packet.getNewCenterZ(), "SetBorderCenterPacket", ci)) {
+        }
     }
 }

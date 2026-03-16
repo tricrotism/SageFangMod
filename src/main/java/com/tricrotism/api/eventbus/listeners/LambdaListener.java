@@ -28,7 +28,8 @@ public class LambdaListener implements IListener {
 
     /**
      * Creates a new lambda listener, can be used for both static and non-static methods.
-     * @param klass Class of the object
+     *
+     * @param klass  Class of the object
      * @param object Object, null if static
      * @param method Method to create lambda for
      */
@@ -49,8 +50,7 @@ public class LambdaListener implements IListener {
             if (isStatic) {
                 methodHandle = lookup.findStatic(klass, name, methodType);
                 invokedType = MethodType.methodType(Consumer.class);
-            }
-            else {
+            } else {
                 methodHandle = lookup.findVirtual(klass, name, methodType);
                 invokedType = MethodType.methodType(Consumer.class, klass);
             }

@@ -15,14 +15,7 @@ import java.util.function.Function;
  * Default implementation of {@link IEventBus}.
  */
 public class EventBus implements IEventBus {
-    private static class LambdaFactoryInfo {
-        public final String packagePrefix;
-        public final LambdaListener.Factory factory;
-
-        public LambdaFactoryInfo(String packagePrefix, LambdaListener.Factory factory) {
-            this.packagePrefix = packagePrefix;
-            this.factory = factory;
-        }
+    private record LambdaFactoryInfo(String packagePrefix, LambdaListener.Factory factory) {
     }
 
     private final Map<Object, List<IListener>> listenerCache = new ConcurrentHashMap<>();
@@ -93,9 +86,9 @@ public class EventBus implements IEventBus {
 
     private void subscribe(IListener listener, boolean onlyStatic) {
         if (onlyStatic) {
-            if (listener.isStatic()) insert(listenerMap.computeIfAbsent(listener.getTarget(), aClass -> new CopyOnWriteArrayList<>()), listener);
-        }
-        else {
+            if (listener.isStatic())
+                insert(listenerMap.computeIfAbsent(listener.getTarget(), aClass -> new CopyOnWriteArrayList<>()), listener);
+        } else {
             insert(listenerMap.computeIfAbsent(listener.getTarget(), aClass -> new CopyOnWriteArrayList<>()), listener);
         }
     }
@@ -134,8 +127,7 @@ public class EventBus implements IEventBus {
         if (l != null) {
             if (staticOnly) {
                 if (listener.isStatic()) l.remove(listener);
-            }
-            else l.remove(listener);
+            } else l.remove(listener);
         }
     }
 

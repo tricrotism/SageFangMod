@@ -30,16 +30,14 @@ public class OffhandCrash extends Module implements Menu {
     public static final OffhandCrash instance = new OffhandCrash();
 
     private static final ServerboundPlayerActionPacket SWAP_PACKET = new ServerboundPlayerActionPacket(
-            ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
-            BlockPos.ZERO,
-            Direction.UP
+        ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
+        BlockPos.ZERO,
+        Direction.UP
     );
 
     public OffhandCrash() {
-        super("offhandcrash", "Offhand Crash", "Flood offhand swap packets to crash other players or the server.");
+        super("offhandcrash", "Offhand Crash", "Flood offhand swap packets to crash other players or the server.", "Combat");
     }
-
-    // ── Config keys ─────────────────────────────────────────────────
 
     private boolean doCrash() {
         return Config.getBool(baseConfig + ".doCrash", true);
@@ -65,8 +63,6 @@ public class OffhandCrash extends Module implements Menu {
         Config.setProperty(baseConfig + ".antiCrash", String.valueOf(v));
     }
 
-    // ── Public API ──────────────────────────────────────────────────
-
     /**
      * Returns true if this module is active and anti-crash is enabled.
      * Other mixins can check this to suppress incoming offhand swap effects.
@@ -74,8 +70,6 @@ public class OffhandCrash extends Module implements Menu {
     public boolean isAntiCrash() {
         return isActive() && antiCrash();
     }
-
-    // ── Events ──────────────────────────────────────────────────────
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
@@ -102,8 +96,6 @@ public class OffhandCrash extends Module implements Menu {
         }
     }
 
-    // ── ImGui ───────────────────────────────────────────────────────
-
     @Override
     public void frame(ImGuiIO io) {
         try {
@@ -113,10 +105,11 @@ public class OffhandCrash extends Module implements Menu {
             ImGui.setNextWindowBgAlpha(0.45f);
             ImGui.begin(title, flags);
 
-            if (ImGui.checkbox("Enabled##ohcEnabled", isActive())) { toggle(); }
+            if (ImGui.checkbox("Enabled##ohcEnabled", isActive())) {
+                toggle();
+            }
             ImGui.separator();
 
-            // Do Crash toggle
             boolean crash = doCrash();
             if (ImGui.checkbox("Send Packets##ohcDoCrash", crash)) {
                 setDoCrash(!crash);
@@ -125,7 +118,6 @@ public class OffhandCrash extends Module implements Menu {
                 ImGui.setTooltip("Send offhand swap packets each tick");
             }
 
-            // Speed slider
             if (crash) {
                 int[] speedArr = {speed()};
                 if (ImGui.sliderInt("Packets/tick##ohcSpeed", speedArr, 1, 10000)) {
@@ -135,7 +127,6 @@ public class OffhandCrash extends Module implements Menu {
 
             ImGui.separator();
 
-            // Anti-crash toggle
             boolean anti = antiCrash();
             if (ImGui.checkbox("Anti-Crash##ohcAnti", anti)) {
                 setAntiCrash(!anti);

@@ -26,16 +26,16 @@ import java.util.zip.ZipOutputStream;
 public class ServerPackManagerMixin {
 
     @Inject(
-            method = "onDownload",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/resources/server/PackLoadFeedback;reportUpdate(Ljava/util/UUID;Lnet/minecraft/client/resources/server/PackLoadFeedback$Update;)V"
-            )
+        method = "onDownload",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/resources/server/PackLoadFeedback;reportUpdate(Ljava/util/UUID;Lnet/minecraft/client/resources/server/PackLoadFeedback$Update;)V"
+        )
     )
     public void onAdd(
-            Collection<ServerPackManager.ServerPackData> collection,
-            DownloadQueue.BatchResult batchResult,
-            CallbackInfo ci
+        Collection<ServerPackManager.ServerPackData> collection,
+        DownloadQueue.BatchResult batchResult,
+        CallbackInfo ci
     ) {
         if (SageFangConfig.isDisablePackUnobf()) return;
 
