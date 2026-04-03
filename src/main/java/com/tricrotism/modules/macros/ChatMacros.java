@@ -48,6 +48,10 @@ public class ChatMacros extends Module implements Menu, SFCommand {
     private static final int MAX_VISIBLE_MACROS = 12;
     private int commandInterval;
 
+    // Cached macro map — loaded once from config, written back only on mutation.
+    // Eliminates per-frame JSON parsing that caused lag with many entries.
+    private Map<String, List<String>> cachedMacros;
+
     public ChatMacros() {
         super("macros", "Chat Macros", "Save and run chat macros.", "Chat");
         commandInterval = Config.getInt(baseConfig + ".interval", 100);
@@ -55,13 +59,22 @@ public class ChatMacros extends Module implements Menu, SFCommand {
 
 
     /**
-     * Loads macros from config, handling backward compatibility with old
-     * single-string format ({@code {"name": "value"}}) by wrapping into lists.
+     * Returns the cached macro map. Loads from config on first access.
      */
     public Map<String, List<String>> getMacros() {
+        if (cachedMacros == null) {
+            cachedMacros = loadMacrosFromConfig();
+        }
+        return cachedMacros;
+    }
+
+    /**
+     * Parses macros from config, handling backward compatibility with old
+     * single-string format ({@code {"name": "value"}}) by wrapping into lists.
+     */
+    private Map<String, List<String>> loadMacrosFromConfig() {
         try {
             String json = Config.get(CONFIG_KEY, "{}");
-            // Try to detect and migrate old format
             JsonObject obj = GSON.fromJson(json, JsonObject.class);
             if (obj == null) return new HashMap<>();
 
@@ -77,7 +90,6 @@ public class ChatMacros extends Module implements Menu, SFCommand {
                     }
                     result.put(entry.getKey(), list);
                 } else if (el.isJsonPrimitive()) {
-                    // Old format: single string value — migrate to list
                     List<String> list = new ArrayList<>();
                     list.add(el.getAsString());
                     result.put(entry.getKey(), list);
@@ -86,7 +98,7 @@ public class ChatMacros extends Module implements Menu, SFCommand {
             }
 
             if (needsMigration) {
-                saveMacros(result);
+                persistMacros(result);
             }
 
             return result;
@@ -96,32 +108,34 @@ public class ChatMacros extends Module implements Menu, SFCommand {
         }
     }
 
-    private void saveMacros(Map<String, List<String>> macros) {
+    private void persistMacros(Map<String, List<String>> macros) {
         Config.setProperty(CONFIG_KEY, GSON.toJson(macros));
     }
 
+    /** Mutates the cached map and writes through to config. */
+    private void saveMacros() {
+        persistMacros(getMacros());
+    }
+
     public void addMacro(String name, String value) {
-        Map<String, List<String>> macros = getMacros();
-        macros.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
-        saveMacros(macros);
+        getMacros().computeIfAbsent(name, k -> new ArrayList<>()).add(value);
+        saveMacros();
     }
 
     public void removeMacro(String name) {
-        Map<String, List<String>> macros = getMacros();
-        macros.remove(name);
-        saveMacros(macros);
+        getMacros().remove(name);
+        saveMacros();
     }
 
     public void removeValue(String name, int index) {
-        Map<String, List<String>> macros = getMacros();
-        List<String> values = macros.get(name);
+        List<String> values = getMacros().get(name);
         if (values == null) return;
         if (index < 0 || index >= values.size()) return;
         values.remove(index);
         if (values.isEmpty()) {
-            macros.remove(name);
+            getMacros().remove(name);
         }
-        saveMacros(macros);
+        saveMacros();
     }
 
     public void runMacro(String name) {
