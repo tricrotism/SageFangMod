@@ -69,7 +69,7 @@ dependencies {
     include implementation("io.avaje:avaje-config:5.1")
     include implementation("io.avaje:avaje-applog:1.2")
 
-    include implementation("org.checkerframework:checker-qual:4.0.0")
+    include implementation("org.checkerframework:checker-qual:4.1.0")
 
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.2")
 
