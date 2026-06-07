@@ -1,4 +1,4 @@
-accessWidener    v1    named
+accessWidener    v2    official
 accessible class net/minecraft/client/resources/server/ServerPackManager$ServerPackData
 accessible class net/minecraft/world/item/component/ResolvableProfile
 accessible class net/minecraft/world/item/component/ResolvableProfile$Partial

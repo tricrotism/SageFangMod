@@ -3,7 +3,7 @@ package com.tricrotism.features.commands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import org.incendo.cloud.Command;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.component.DefaultValue;
@@ -20,7 +20,7 @@ public class ClickSlotCommand implements SFCommand {
         manager.command(root.literal("clickslot")
             .required("slot", integerParser())
             .required("button", integerParser())
-            .required("action", enumParser(ClickType.class))
+            .required("action", enumParser(ContainerInput.class))
             .optional("times", integerParser(1), DefaultValue.constant(1))
             .handler(this::execute)
         );
@@ -36,11 +36,11 @@ public class ClickSlotCommand implements SFCommand {
 
         int slot = ctx.<Integer>get("slot");
         int button = ctx.<Integer>get("button");
-        ClickType action = ctx.get("action");
+        ContainerInput action = ctx.get("action");
         int containerId = mc.player.containerMenu.containerId;
 
         for (int i = 0; i < times; i++) {
-            mc.gameMode.handleInventoryMouseClick(containerId, slot, button, action, mc.player);
+            mc.gameMode.handleContainerInput(containerId, slot, button, action, mc.player);
         }
 
         ctx.sender().sendFeedback(Component.literal(

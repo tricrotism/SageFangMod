@@ -62,7 +62,7 @@ public class InfoMenu implements Menu {
                     log.info("Copied position to clipboard: {}", xyzFormat);
                 }
 
-                String worldName = mc.player.level().dimension().location().toString().split(":")[1];
+                String worldName = mc.player.level().dimension().identifier().toString().split(":")[1];
                 ImGui.text("World: " + worldName);
 
                 long memoryUsed = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();

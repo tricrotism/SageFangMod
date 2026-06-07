@@ -2,7 +2,7 @@ package com.tricrotism.mixin.impl.inventory;
 
 import com.tricrotism.config.SageFangConfig;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,8 +19,8 @@ public class HandledScreenMixin {
     @Unique
     private static final float SCALE = 0.75f;
 
-    @Inject(method = "renderSlot", at = @At("TAIL"))
-    private void onRenderSlot(GuiGraphics context, Slot slot, CallbackInfo ci) {
+    @Inject(method = "extractSlot", at = @At("TAIL"))
+    private void onRenderSlot(GuiGraphicsExtractor context, Slot slot, int offsetX, int offsetY, CallbackInfo ci) {
         if (!SageFangConfig.isShouldShowSlotNumbers()) return;
 
         int x = slot.x;
@@ -29,7 +29,7 @@ public class HandledScreenMixin {
         context.pose().pushMatrix();
         context.pose().translate(0, 0);
         context.pose().scale(SCALE, SCALE);
-        context.drawString(
+        context.text(
             Minecraft.getInstance().font,
             String.valueOf(index),
             (int) ((x + 1) * (1 / SCALE)),

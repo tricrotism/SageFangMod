@@ -49,7 +49,7 @@ public class SageFang implements ModInitializer {
         io.avaje.config.Config.loadIntoSystemProperties();
         ConfigPersistence.init();
 
-        PayloadTypeRegistry.playS2C().register(ServerInfoCustomPayload.ID, ServerInfoCustomPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(ServerInfoCustomPayload.ID, ServerInfoCustomPayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(
             ServerInfoCustomPayload.ID,
             (payload, ctx) -> lastServerInfo = payload.serverInfo()

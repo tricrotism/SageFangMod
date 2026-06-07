@@ -46,7 +46,7 @@ public class PlayerInfoMenu implements Menu {
                     log.info("Copied position to clipboard: {}", xyzFormat);
                 }
 
-                String worldName = Minecraft.getInstance().player.level().dimension().location().toString().split(":")[1];
+                String worldName = Minecraft.getInstance().player.level().dimension().identifier().toString().split(":")[1];
                 ImGui.text("World");
                 ImGui.sameLine();
                 ImGui.text(worldName);

@@ -14,7 +14,7 @@ import imgui.type.ImString;
 import io.avaje.config.Config;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -58,7 +58,7 @@ public class GhostBlock extends Module implements Menu {
     private BlockState getSelectedBlock() {
         String blockId = Config.get(baseConfig + ".block", "minecraft:stone");
         try {
-            ResourceLocation rl = ResourceLocation.parse(blockId);
+            Identifier rl = Identifier.parse(blockId);
             var ref = BuiltInRegistries.BLOCK.get(rl);
             if (ref.isPresent()) {
                 Block block = ref.get().value();

@@ -18,7 +18,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
@@ -84,7 +84,7 @@ public class ItemViewer extends Module implements Menu {
             }
 
             ImGui.text("Item: " + stack.getHoverName().getString());
-            ResourceLocation itemKey = BuiltInRegistries.ITEM.getKey(stack.getItem());
+            Identifier itemKey = BuiltInRegistries.ITEM.getKey(stack.getItem());
             ImGui.text("ID: " + (itemKey != null ? itemKey.toString() : "unknown"));
             ImGui.text("Count: " + stack.getCount());
 
@@ -104,7 +104,7 @@ public class ItemViewer extends Module implements Menu {
     @SuppressWarnings("unchecked")
     private <T> void renderComponent(ItemStack stack, TypedDataComponent<T> component) {
         DataComponentType<T> type = component.type();
-        ResourceLocation key = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(type);
+        Identifier key = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(type);
         String name = key != null ? key.getPath() : type.toString();
         Codec<T> codec = type.codec();
         boolean transient_ = codec == null;

@@ -2,12 +2,12 @@ package com.tricrotism.modules.blink;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
@@ -21,23 +21,15 @@ import java.util.List;
  * The ghost is a real {@link RemotePlayer} entity added client-side only — it
  * renders through the normal entity pipeline (skin, armor, pose) with zero
  * extra draw code. The breadcrumb trail is drawn as colored line segments
- * in {@link WorldRenderEvents#BEFORE_DEBUG_RENDER}.
+ * in {@link LevelRenderEvents#BEFORE_GIZMOS}.
  */
 public final class BlinkRenderer {
 
-    // Breadcrumb recording — one position per tick, capped at 30 seconds
     private static final int MAX_BREADCRUMBS = 600;
-
-    // Fake player entity ID — well outside the server-assigned range
     private static final int FAKE_ENTITY_ID = Integer.MAX_VALUE - 7;
-
-    // Trail colors (RGBA) — gradient from green (start) to red (end)
     private static final float TRAIL_ALPHA = 0.7f;
-
     private final List<Vec3> breadcrumbs = new ArrayList<>();
     private RemotePlayer fakePlayer;
-
-    // ── lifecycle ────────────────────────────────────────────────────
 
     public void onActivate() {
         var mc = Minecraft.getInstance();
@@ -55,7 +47,6 @@ public final class BlinkRenderer {
         if (mc.player == null) return;
 
         Vec3 pos = mc.player.position();
-        // Only record if we actually moved (avoids clutter when standing still)
         if (breadcrumbs.isEmpty() || breadcrumbs.getLast().distanceToSqr(pos) > 0.01) {
             if (breadcrumbs.size() < MAX_BREADCRUMBS) {
                 breadcrumbs.add(pos);
@@ -68,10 +59,8 @@ public final class BlinkRenderer {
         breadcrumbs.clear();
     }
 
-    // ── fake player ─────────────────────────────────────────────────
-
     private void spawnFakePlayer(Minecraft mc, Vec3 pos) {
-        removeFakePlayer(); // clean up any stale ghost
+        removeFakePlayer();
 
         ClientLevel level = mc.level;
         if (level == null || mc.player == null) return;
@@ -84,7 +73,6 @@ public final class BlinkRenderer {
         fakePlayer.setYHeadRot(mc.player.getYHeadRot());
         fakePlayer.setYBodyRot(mc.player.yBodyRot);
 
-        // Copy inventory so the ghost wears the same gear
         for (int i = 0; i < mc.player.getInventory().getContainerSize(); i++) {
             fakePlayer.getInventory().setItem(i, mc.player.getInventory().getItem(i).copy());
         }
@@ -99,30 +87,28 @@ public final class BlinkRenderer {
         }
     }
 
-    // ── breadcrumb trail rendering ──────────────────────────────────
-
     /**
      * Register this once during mod init. Draws the breadcrumb trail
      * as colored line segments in world space.
      */
     public void register() {
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(this::renderTrail);
+        LevelRenderEvents.BEFORE_GIZMOS.register(this::renderTrail);
     }
 
-    private void renderTrail(WorldRenderContext context) {
+    private void renderTrail(LevelRenderContext context) {
         if (!Blink.instance.isActive() || breadcrumbs.size() < 2) return;
 
-        var consumers = context.consumers();
+        var consumers = context.bufferSource();
         if (consumers == null) return;
 
-        PoseStack matrices = context.matrices();
-        Vec3 camera = context.worldState().cameraRenderState.pos;
+        PoseStack matrices = context.poseStack();
+        Vec3 camera = context.levelState().cameraRenderState.pos;
 
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
         Matrix4f pose = matrices.last().pose();
 
-        VertexConsumer lines = consumers.getBuffer(RenderType.lines());
+        VertexConsumer lines = consumers.getBuffer(RenderTypes.lines());
         int total = breadcrumbs.size();
 
         for (int i = 0; i < total - 1; i++) {

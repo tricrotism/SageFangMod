@@ -17,7 +17,7 @@ public class MessageUtils {
             .append(Component.literal(" » ").withStyle(ChatFormatting.DARK_GRAY))
             .append(message);
 
-        mc.gui.getChat().addMessage(component);
+        mc.gui.getChat().addClientSystemMessage(component);
     }
 
     /**

@@ -8,16 +8,16 @@ import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 /**
- * Overrides the camera rotation angles in {@code Camera.setup()} when
+ * Overrides the camera rotation angles in {@code Camera.alignWithEntity()} when
  * free look is engaged. All calls to {@code setRotation(float, float)}
- * within setup() are intercepted so the camera uses the free look
+ * within alignWithEntity() are intercepted so the camera uses the free look
  * controller's yaw/pitch instead of the entity's view angles.
  */
 @Mixin(Camera.class)
 public class CameraMixin {
 
     @ModifyArgs(
-        method = "setup",
+        method = "alignWithEntity",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V")
     )
     private void sagefang$overrideRotation(Args args) {

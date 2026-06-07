@@ -84,8 +84,6 @@ public class SFCommandManager {
                 }
             }));
 
-        // ── Modular commands ───────────────────────────────────────────
-
         for (SFCommand cmd : COMMANDS) {
             cmd.register(manager, root);
         }
