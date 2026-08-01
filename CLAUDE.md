@@ -30,6 +30,10 @@ provably fails.
 lines you'd already be reading or changing — don't open a file purely to chase them. If a migration is non-trivial (
 signature change, callsite cascade, mixin target moved), ask first.
 
+One gotcha worth knowing: the rendered world FOV is the `Camera.fov` field, filled each frame by
+`Camera.calculateFov(F)` — hook that for zoom/FOV mixins. `Camera.getFov()` only feeds horizon projection, so a
+mixin on it changes nothing visible.
+
 **Wire a new module/feature everywhere it must register.** A `Module` is invisible until it's hooked into *all* the
 registration points. When adding one, mirror an existing peer (e.g. `Blink`, `GhostBlock`) across every site:
 
@@ -233,8 +237,14 @@ The render thread, the network thread, and background `Timer`s share state.
 
 ## Comments
 
-No decorative section dividers (`// ── modular commands ───────`). Add comments only where the logic isn't self-evident;
-keep the existing Javadoc on public API types.
+No decorative section dividers or banner comments — anything of the form `// ── text ──────`, `// --- text -------`,
+`// ===== text =====`, or a label padded out with runs of `─`, `-`, `=`, `*`, `#`. They add noise and go stale. Don't
+introduce them in new code, and don't reformat surrounding code to add them; if a method is long enough to "need"
+section banners, that's a signal to split it, not to decorate it. (Some existing files still carry these from before
+this
+rule — leave them unless you're already rewriting that block.) Add comments only where the logic isn't self-evident;
+keep
+the existing Javadoc on public API types.
 
 ---
 

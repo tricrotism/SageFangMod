@@ -51,7 +51,6 @@ public class PluginsCommand implements SFCommand {
             return;
         }
 
-        // ── Method 1: Parse command tree for namespaced commands ──────────
         Set<String> fromTree = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         for (CommandNode<?> child : connection.getCommands().getRoot().getChildren()) {
             String name = child.getName();
@@ -65,7 +64,6 @@ public class PluginsCommand implements SFCommand {
         }
         displaySection(source, "Command Tree", fromTree);
 
-        // ── Method 2: Tab-complete "version " to discover all plugins ────
         int txId = ThreadLocalRandom.current().nextInt(0x1000, 0x7FFF);
         pendingTxId = txId;
         pendingCallback.set(packet -> {
@@ -91,8 +89,6 @@ public class PluginsCommand implements SFCommand {
         pendingTxId = -1;
         if (cb != null) cb.accept(packet);
     }
-
-    // ── Formatting ───────────────────────────────────────────────────────
 
     private void displaySection(FabricClientCommandSource source, String method, Set<String> plugins) {
         if (plugins.isEmpty()) {

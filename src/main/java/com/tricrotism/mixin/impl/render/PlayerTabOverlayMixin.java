@@ -1,6 +1,8 @@
 package com.tricrotism.mixin.impl.render;
 
 import com.tricrotism.modules.clientdetect.ClientDetect;
+import com.tricrotism.modules.clientdetect.labymod.LabyGroup;
+import com.tricrotism.modules.clientdetect.labymod.LabySocial;
 import net.minecraft.client.gui.components.PlayerTabOverlay;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
@@ -13,8 +15,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Appends client badge indicators to player names in the tab list
- * for players detected as LabyMod users.
+ * Appends client badge indicators to player names in the tab list for players
+ * detected as LabyMod users. When the player's LabyMod rank group is known
+ * (from {@code PacketUserBadge}, via {@link LabySocial#getGroup}), their colored
+ * rank tag (e.g. {@code [Partner]}) is shown; otherwise a generic LabyMod marker.
  */
 @Mixin(PlayerTabOverlay.class)
 public class PlayerTabOverlayMixin {
@@ -25,13 +29,15 @@ public class PlayerTabOverlayMixin {
     private void sagefang$appendClientBadge(PlayerInfo playerInfo,
                                             CallbackInfoReturnable<Component> cir) {
         var uuid = playerInfo.getProfile().id();
-        var detect = ClientDetect.instance;
-        boolean isLaby = detect.isLabyModUser(uuid);
+        if (!ClientDetect.instance.isLabyModUser(uuid)) return;
 
-        if (isLaby) {
-            MutableComponent result = Component.empty().append(cir.getReturnValue());
+        MutableComponent result = Component.empty().append(cir.getReturnValue());
+        LabyGroup group = LabySocial.instance.getGroup(uuid);
+        if (group != null) {
+            result.append(Component.literal(" [" + group.name() + "]").withColor(group.color()));
+        } else {
             result.append(Component.literal(" ◆").withColor(LABYMOD_COLOR.getValue()));
-            cir.setReturnValue(result);
         }
+        cir.setReturnValue(result);
     }
 }

@@ -1,7 +1,9 @@
 package com.tricrotism.modules.blink;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.tricrotism.mixin.accessors.AbstractClientPlayerAccessor;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
@@ -13,6 +15,7 @@ import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Renders a frozen "ghost" of the player at the position Blink was activated,
@@ -28,6 +31,7 @@ public final class BlinkRenderer {
     private static final int MAX_BREADCRUMBS = 600;
     private static final int FAKE_ENTITY_ID = Integer.MAX_VALUE - 7;
     private static final float TRAIL_ALPHA = 0.7f;
+    private static final float TRAIL_WIDTH = 2.0f;
     private final List<Vec3> breadcrumbs = new ArrayList<>();
     private RemotePlayer fakePlayer;
 
@@ -65,8 +69,16 @@ public final class BlinkRenderer {
         ClientLevel level = mc.level;
         if (level == null || mc.player == null) return;
 
-        fakePlayer = new RemotePlayer(level, mc.player.getGameProfile());
+        GameProfile source = mc.player.getGameProfile();
+        GameProfile ghostProfile = new GameProfile(UUID.randomUUID(), source.name(), source.properties());
+
+        fakePlayer = new RemotePlayer(level, ghostProfile);
         fakePlayer.setId(FAKE_ENTITY_ID);
+
+        if (mc.getConnection() != null) {
+            var info = mc.getConnection().getPlayerInfo(mc.player.getUUID());
+            if (info != null) ((AbstractClientPlayerAccessor) fakePlayer).sagefang$setPlayerInfo(info);
+        }
         fakePlayer.setPos(pos);
         fakePlayer.setYRot(mc.player.getYRot());
         fakePlayer.setXRot(mc.player.getXRot());
@@ -137,10 +149,12 @@ public final class BlinkRenderer {
 
             lines.addVertex(pose, (float) from.x, y1, (float) from.z)
                 .setColor(r, g, b, TRAIL_ALPHA)
-                .setNormal(nx, ny, nz);
+                .setNormal(nx, ny, nz)
+                .setLineWidth(TRAIL_WIDTH);
             lines.addVertex(pose, (float) to.x, y2, (float) to.z)
                 .setColor(r, g, b, TRAIL_ALPHA)
-                .setNormal(nx, ny, nz);
+                .setNormal(nx, ny, nz)
+                .setLineWidth(TRAIL_WIDTH);
         }
 
         matrices.popPose();

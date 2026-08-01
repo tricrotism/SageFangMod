@@ -49,6 +49,7 @@ public class SFCommandManager {
         new RepeatDelayCommand(),
         new ForEachPlayerCommand(),
         new PluginsCommand(),
+        new LabyFriendCommand(),
         ChatMacros.instance,
     };
 

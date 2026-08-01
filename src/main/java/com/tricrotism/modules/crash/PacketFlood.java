@@ -31,8 +31,6 @@ public class PacketFlood extends Module implements Menu {
 
     public static final PacketFlood instance = new PacketFlood();
 
-    // ── Flood type labels & LPX limit descriptions ─────────────────
-
     private static final String[] TYPE_LABELS = {
         "Animation", "Use Item", "Block Place", "Interact",
         "Position", "Digging", "Tab Complete", "Sign"
@@ -48,8 +46,6 @@ public class PacketFlood extends Module implements Menu {
         "LPX limit: 40 / 1000ms",
         "LPX limit: 2 / 300ms"
     };
-
-    // ── Cached static packets ──────────────────────────────────────
 
     private static final ServerboundSwingPacket SWING =
         new ServerboundSwingPacket(InteractionHand.MAIN_HAND);
@@ -77,13 +73,9 @@ public class PacketFlood extends Module implements Menu {
     private static final ServerboundSignUpdatePacket SIGN =
         new ServerboundSignUpdatePacket(BlockPos.ZERO, true, "", "", "", "");
 
-    // ── Constructor ────────────────────────────────────────────────
-
     public PacketFlood() {
         super("packetflood", "Packet Flood", "Flood configurable packet types to trigger LPX FLOOD_B rate limits.", "Combat");
     }
-
-    // ── Config keys ────────────────────────────────────────────────
 
     private int type() {
         return Config.getInt(baseConfig + ".type", 0);
@@ -109,8 +101,6 @@ public class PacketFlood extends Module implements Menu {
         Config.setProperty(baseConfig + ".useRawChannel", String.valueOf(v));
     }
 
-    // ── Packet resolution ──────────────────────────────────────────
-
     /**
      * Returns the packet to send for the current flood type.
      * Most types use a cached static instance; Position is rebuilt
@@ -133,8 +123,6 @@ public class PacketFlood extends Module implements Menu {
             default -> SWING;
         };
     }
-
-    // ── Events ─────────────────────────────────────────────────────
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
@@ -169,8 +157,6 @@ public class PacketFlood extends Module implements Menu {
         }
     }
 
-    // ── ImGui ──────────────────────────────────────────────────────
-
     @Override
     public void frame(ImGuiIO io) {
         try {
@@ -185,19 +171,16 @@ public class PacketFlood extends Module implements Menu {
             }
             ImGui.separator();
 
-            // Type combo
             ImInt typeInt = new ImInt(type());
             if (ImGui.combo("Flood Type##pfType", typeInt, TYPE_LABELS)) {
                 setType(typeInt.get());
             }
 
-            // Speed slider
             int[] speedArr = {speed()};
             if (ImGui.sliderInt("Packets/tick##pfSpeed", speedArr, 1, 5000)) {
                 setSpeed(speedArr[0]);
             }
 
-            // Raw channel toggle
             boolean raw = useRawChannel();
             if (ImGui.checkbox("Use Raw Channel##pfRaw", raw)) {
                 setUseRawChannel(!raw);
@@ -208,7 +191,6 @@ public class PacketFlood extends Module implements Menu {
 
             ImGui.separator();
 
-            // LPX limit info for selected type
             int currentType = type();
             if (currentType >= 0 && currentType < LPX_LIMITS.length) {
                 ImGui.textDisabled(LPX_LIMITS[currentType]);

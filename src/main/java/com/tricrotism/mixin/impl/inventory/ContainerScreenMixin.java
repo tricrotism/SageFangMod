@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.awt.*;
 
 @Mixin(AbstractContainerScreen.class)
-public class HandledScreenMixin {
+public class ContainerScreenMixin {
 
     @Unique
     private static final float SCALE = 0.75f;

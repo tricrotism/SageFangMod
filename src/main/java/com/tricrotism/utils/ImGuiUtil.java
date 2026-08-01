@@ -11,13 +11,24 @@ import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWKeyCallback;
 
 import java.util.List;
 
 public class ImGuiUtil {
 
     public static final ImGuiUtil INSTANCE = new ImGuiUtil();
-    private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
+    private GLFWKeyCallback mcKeyCallback;
+    private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw() {
+        @Override
+        public void keyCallback(final long window, final int key, final int scancode, final int action, final int mods) {
+            if (key == GLFW.GLFW_KEY_TAB && (mods & GLFW.GLFW_MOD_CONTROL) != 0) {
+                if (mcKeyCallback != null) mcKeyCallback.invoke(window, key, scancode, action, mods);
+                return;
+            }
+            super.keyCallback(window, key, scancode, action, mods);
+        }
+    };
     private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
 
     public void create(final long handle) {
@@ -28,7 +39,10 @@ public class ImGuiUtil {
         data.setIniFilename("sagefang.ini");
         data.setFontGlobalScale(1F);
 
-        data.setConfigFlags(ImGuiConfigFlags.DockingEnable | ImGuiConfigFlags.ViewportsEnable);
+        data.setConfigFlags(ImGuiConfigFlags.DockingEnable | ImGuiConfigFlags.ViewportsEnable | ImGuiConfigFlags.NoMouseCursorChange);
+
+        mcKeyCallback = GLFW.glfwSetKeyCallback(handle, null);
+        GLFW.glfwSetKeyCallback(handle, mcKeyCallback);
 
         imGuiGlfw.init(handle, true);
 

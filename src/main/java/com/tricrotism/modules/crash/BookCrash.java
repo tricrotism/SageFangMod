@@ -152,8 +152,6 @@ public class BookCrash extends Module implements Menu {
         return Optional.empty();
     }
 
-    // ── Events ──────────────────────────────────────────────────────
-
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (!isActive()) return;
@@ -182,8 +180,6 @@ public class BookCrash extends Module implements Menu {
             toggle();
         }
     }
-
-    // ── ImGui ───────────────────────────────────────────────────────
 
     @Override
     public void frame(ImGuiIO io) {

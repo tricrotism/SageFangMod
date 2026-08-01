@@ -21,7 +21,7 @@ import org.lwjgl.glfw.GLFW;
  * <p>
  * The FOV is modified via {@code GameRendererFovMixin} which reads
  * {@link #getInterpolatedFovMultiplier(float)}. Scroll-to-zoom is intercepted
- * by {@code MouseHandlerExtMixin} which calls {@link #handleScroll(double)}.
+ * by {@code MouseInputMixin} which calls {@link #handleScroll(double)}.
  */
 public class Zoom extends Module implements Menu {
 
@@ -30,7 +30,7 @@ public class Zoom extends Module implements Menu {
     private static final float TRANSITION_SPEED = 0.3f;
     private static final float SNAP_THRESHOLD = 0.001f;
     private static final float MIN_ZOOM_DISTANCE = 1.1f;
-    private static final float MAX_ZOOM_DISTANCE = 50.0f;
+    private static final float MAX_ZOOM_DISTANCE = 1000.0f;
 
     private boolean holdMode;
     private float baseZoomDistance;
@@ -96,7 +96,7 @@ public class Zoom extends Module implements Menu {
     }
 
     /**
-     * Called by {@code MouseHandlerExtMixin} when the player scrolls while zoomed.
+     * Called by {@code MouseInputMixin} when the player scrolls while zoomed.
      * Adjusts the scroll offset to increase or decrease zoom level.
      *
      * @param delta raw vertical scroll delta (positive = scroll up = zoom in more)
@@ -104,8 +104,7 @@ public class Zoom extends Module implements Menu {
     public void handleScroll(double delta) {
         if (!zoomEngaged) return;
         float direction = (float) Math.signum(delta);
-        float speed = scrollOffset <= -1.5f ? 0.05f : 0.25f;
-        float scrollDelta = speed * direction;
+        float scrollDelta = 0.25f * direction;
         float newDistance = baseZoomDistance + scrollOffset + scrollDelta;
         if (newDistance >= MIN_ZOOM_DISTANCE && newDistance <= MAX_ZOOM_DISTANCE) {
             scrollOffset += scrollDelta;

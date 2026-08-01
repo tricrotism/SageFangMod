@@ -34,8 +34,6 @@ public class PositionCrash extends Module implements Menu {
         super("positioncrash", "Position Crash", "Send malformed position packets to crash or exploit servers.", "Combat");
     }
 
-    // ── Config keys ─────────────────────────────────────────────────
-
     private int mode() {
         return Config.getInt(baseConfig + ".mode", 0);
     }
@@ -59,8 +57,6 @@ public class PositionCrash extends Module implements Menu {
     private void setUseRawChannel(boolean v) {
         Config.setProperty(baseConfig + ".useRawChannel", String.valueOf(v));
     }
-
-    // ── Events ──────────────────────────────────────────────────────
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
@@ -98,8 +94,6 @@ public class PositionCrash extends Module implements Menu {
             toggle();
         }
     }
-
-    // ── Packet construction ─────────────────────────────────────────
 
     private static ServerboundMovePlayerPacket buildPacket(int mode, float yRot, float xRot) {
         return switch (mode) {
@@ -139,8 +133,6 @@ public class PositionCrash extends Module implements Menu {
             );
         };
     }
-
-    // ── ImGui ───────────────────────────────────────────────────────
 
     @Override
     public void frame(ImGuiIO io) {

@@ -20,9 +20,9 @@ import org.lwjgl.glfw.GLFW;
  * LabyMod-style free look — look around freely without changing player
  * movement direction. Switches to third-person while active.
  * <p>
- * Camera rotation is overridden via {@code CameraMixin} which reads
+ * Camera rotation is overridden via {@code FreeLookCameraMixin} which reads
  * {@link #getCameraYaw()} / {@link #getCameraPitch()}.
- * Player body rotation is suppressed via {@code MouseHandlerExtMixin}
+ * Player body rotation is suppressed via {@code MouseInputMixin}
  * which calls {@link #handleMouseDelta(double, double)}.
  */
 public class FreeLook extends Module implements Menu {
@@ -78,7 +78,7 @@ public class FreeLook extends Module implements Menu {
     }
 
     /**
-     * Called by {@code MouseHandlerExtMixin} instead of {@code LocalPlayer.turn()}.
+     * Called by {@code MouseInputMixin} instead of {@code LocalPlayer.turn()}.
      * Accumulates mouse movement onto the free camera angles.
      *
      * @param yRot horizontal mouse delta (pre-sensitivity, pre-turn multiplier)

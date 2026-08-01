@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
  * controller's yaw/pitch instead of the entity's view angles.
  */
 @Mixin(Camera.class)
-public class CameraMixin {
+public class FreeLookCameraMixin {
 
     @ModifyArgs(
         method = "alignWithEntity",

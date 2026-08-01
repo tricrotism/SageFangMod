@@ -1,5 +1,6 @@
 package com.tricrotism.mixin.impl.render;
 
+import com.tricrotism.modules.freecam.Freecam;
 import com.tricrotism.modules.freelook.FreeLook;
 import com.tricrotism.modules.zoom.Zoom;
 import imgui.ImGui;
@@ -19,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * to keep feature concerns isolated.
  */
 @Mixin(MouseHandler.class)
-public class MouseHandlerExtMixin {
+public class MouseInputMixin {
 
     /**
      * When zoom is engaged with scroll-to-zoom enabled, intercept the scroll
@@ -46,6 +47,10 @@ public class MouseHandlerExtMixin {
     private void sagefang$redirectTurn(LocalPlayer player, double yRot, double xRot) {
         if (FreeLook.instance.isFreeLookEngaged()) {
             FreeLook.instance.handleMouseDelta(yRot, xRot);
+            return;
+        }
+        if (Freecam.instance.isEngaged()) {
+            Freecam.instance.handleMouseDelta(yRot, xRot);
             return;
         }
         player.turn(yRot, xRot);

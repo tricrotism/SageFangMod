@@ -18,7 +18,7 @@ public final class GraphRenderer {
      * Renders a simple ImGui.plotLines graph (for standalone menus).
      */
     public static void plotLines(String label, RingBuffer buffer, float yMin, float yMax) {
-        float[] data = buffer.toArray();
+        float[] data = buffer.toArrayShared();
         if (data.length < 2) return;
 
         float effectiveMax = Float.isNaN(yMax) ? Float.MAX_VALUE : yMax;
@@ -34,7 +34,7 @@ public final class GraphRenderer {
     public static void plotImPlot(String label, RingBuffer buffer, float yMin, float yMax) {
         if (buffer.size() == 0) return;
 
-        float[] values = buffer.toArray();
+        float[] values = buffer.toArrayShared();
         int w = SageFangConfig.getGraphWidth();
         int h = SageFangConfig.getGraphHeight();
 

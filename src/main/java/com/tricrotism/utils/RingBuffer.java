@@ -9,6 +9,7 @@ public final class RingBuffer {
     private float[] data;
     private int head;
     private int count;
+    private float[] scratch;
 
     public RingBuffer(int capacity) {
         this.data = new float[capacity];
@@ -40,6 +41,23 @@ public final class RingBuffer {
             System.arraycopy(data, 0, result, data.length - tail, tail);
         }
         return result;
+    }
+
+    /**
+     * Like {@link #toArray()} but reuses an internal scratch array, avoiding a
+     * per-call allocation. The returned array is only valid until the next call
+     * and must not be retained — intended for the per-frame render hot path.
+     */
+    public float[] toArrayShared() {
+        if (scratch == null || scratch.length != count) scratch = new float[count];
+        if (count < data.length) {
+            System.arraycopy(data, 0, scratch, 0, count);
+        } else {
+            int tail = head;
+            System.arraycopy(data, tail, scratch, 0, data.length - tail);
+            System.arraycopy(data, 0, scratch, data.length - tail, tail);
+        }
+        return scratch;
     }
 
     /**

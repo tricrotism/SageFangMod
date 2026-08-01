@@ -4,6 +4,7 @@ import com.tricrotism.SageFang;
 import com.tricrotism.api.menus.Menu;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.config.SageFangConfig;
+import com.tricrotism.modules.packets.UIPacketDelay;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
@@ -25,11 +26,14 @@ public class SettingsMenu implements Menu {
 
     private static final int TOGGLE_KEY = GLFW.GLFW_KEY_RIGHT_CONTROL;
     private static final List<String> CATEGORY_ORDER = List.of(
-        "Visual", "Chat", "Combat", "Network", "World", "Utility"
+        "Visual", "ESP", "Chat", "Combat", "Network", "World", "Utility", "Exploit", "Logger"
     );
 
     private boolean visible = true;
     private boolean keyWasDown;
+
+    private Map<String, List<Module>> categoryCache;
+    private int cachedModuleCount = -1;
 
     @Override
     public void frame(ImGuiIO io) {
@@ -72,6 +76,14 @@ public class SettingsMenu implements Menu {
 
         if (ImGui.checkbox("Player Info##playerInfo", SageFangConfig.isPlayerInfoMenuEnabled())) {
             SageFangConfig.setPlayerInfoMenuEnabled(!SageFangConfig.isPlayerInfoMenuEnabled());
+        }
+
+        boolean logVisible = io.avaje.config.Config.getBool("menu.log.visible", false);
+        if (ImGui.checkbox("Log##sfLogMenu", logVisible)) {
+            io.avaje.config.Config.setProperty("menu.log.visible", String.valueOf(!logVisible));
+        }
+        if (ImGui.isItemHovered()) {
+            ImGui.setTooltip("Module messages window (with a toggle for chat output)");
         }
     }
 
@@ -152,6 +164,15 @@ public class SettingsMenu implements Menu {
             SageFangConfig.setDelayUIPackets(!SageFangConfig.isDelayUIPackets());
         }
 
+        int queued = UIPacketDelay.size();
+        if (queued > 0) {
+            if (ImGui.button("Send##delayUISend")) UIPacketDelay.release();
+            ImGui.sameLine();
+            if (ImGui.button("Clear##delayUIClear")) UIPacketDelay.clear();
+            ImGui.sameLine();
+            ImGui.text("Queued: " + queued);
+        }
+
         if (ImGui.checkbox("Send UI Packets##sendUIPackets", SageFangConfig.isSendUIPackets())) {
             SageFangConfig.setSendUIPackets(!SageFangConfig.isSendUIPackets());
         }
@@ -174,14 +195,18 @@ public class SettingsMenu implements Menu {
     }
 
     private void renderModulesSection() {
-        Map<String, List<Module>> byCategory = new LinkedHashMap<>();
-        for (String cat : CATEGORY_ORDER) byCategory.put(cat, new ArrayList<>());
-
-        for (Module m : Module.getRegistry()) {
-            byCategory.computeIfAbsent(m.category, k -> new ArrayList<>()).add(m);
+        List<Module> registry = Module.getRegistry();
+        if (categoryCache == null || registry.size() != cachedModuleCount) {
+            Map<String, List<Module>> byCategory = new LinkedHashMap<>();
+            for (String cat : CATEGORY_ORDER) byCategory.put(cat, new ArrayList<>());
+            for (Module m : registry) {
+                byCategory.computeIfAbsent(m.category, k -> new ArrayList<>()).add(m);
+            }
+            categoryCache = byCategory;
+            cachedModuleCount = registry.size();
         }
 
-        for (var entry : byCategory.entrySet()) {
+        for (var entry : categoryCache.entrySet()) {
             List<Module> modules = entry.getValue();
             if (modules.isEmpty()) continue;
 

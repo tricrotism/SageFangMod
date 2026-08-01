@@ -65,8 +65,7 @@ dependencies {
     include implementation("io.github.spair:imgui-java-lwjgl3:${project.imgui_version}")
 
     include implementation("io.github.spair:imgui-java-natives-windows:${project.imgui_version}")
-    //im a windows user :nerd:
-//    include implementation("io.github.spair:imgui-java-natives-linux:${project.imgui_version}")
+    include implementation("io.github.spair:imgui-java-natives-linux:${project.imgui_version}")
 //    include implementation("io.github.spair:imgui-java-natives-macos:${project.imgui_version}")
 
     include implementation("net.kyori:adventure-platform-fabric:${project.adventure_version}")
