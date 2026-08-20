@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * While {@link SingleMine} runs in manual-mine mode it is the miner, so vanilla's
- * own block breaking must stand down — otherwise holding left-click would fire
+ * own block breaking must stand down. Otherwise, holding left-click would fire
  * both vanilla's dig packets and the module's, defeating its packet settings.
  */
 @Mixin(MultiPlayerGameMode.class)

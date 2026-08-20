@@ -17,11 +17,11 @@ public final class KeybindUtil {
      */
     public static final int NO_CHANGE = Integer.MIN_VALUE;
     /**
-     * User clicked the button — caller should enter awaiting mode.
+     * User clicked the button. Caller should enter awaiting mode.
      */
     public static final int START_LISTENING = Integer.MIN_VALUE + 1;
     /**
-     * User pressed Escape — caller should clear the bind.
+     * User pressed Escape. Caller should clear the bind.
      */
     public static final int CLEAR_BIND = Integer.MIN_VALUE + 2;
 
@@ -70,7 +70,7 @@ public final class KeybindUtil {
      */
     public static boolean isKeyDown(int key) {
         if (key == GLFW.GLFW_KEY_UNKNOWN) return false;
-        if (Minecraft.getInstance().screen != null) return false;
+        if (Minecraft.getInstance().gui.screen() != null) return false;
         long window = Minecraft.getInstance().getWindow().handle();
         return GLFW.glfwGetKey(window, key) == GLFW.GLFW_PRESS;
     }

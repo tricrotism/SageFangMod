@@ -24,6 +24,8 @@ public final class SageFangConfig {
     private static final String GRAPH_HEIGHT = "graph.height";
     private static final String GRAPH_HISTORY = "graph.history";
 
+    private static final String ESP_FILLED = "esp.filled";
+
     private static final String RPACK_BYPASS = "resourcepack.bypass";
     private static final String RPACK_FORCE_DENY = "resourcepack.forceDeny";
     private static final String RPACK_DISABLE_UNOBF = "resourcepack.disableUnobf";
@@ -100,6 +102,10 @@ public final class SageFangConfig {
     public static int getGraphHistory() {return getInt(GRAPH_HISTORY, 300);}
 
     public static void setGraphHistory(int v) {setInt(GRAPH_HISTORY, v);}
+
+    public static boolean isEspFilled() {return getBool(ESP_FILLED, false);}
+
+    public static void setEspFilled(boolean v) {setBool(ESP_FILLED, v);}
 
     public static boolean isBypassResourcePack() {return getBool(RPACK_BYPASS, false);}
 

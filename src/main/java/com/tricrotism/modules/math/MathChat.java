@@ -1,15 +1,14 @@
 package com.tricrotism.modules.math;
 
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.SendMessageEvent;
 import com.tricrotism.utils.MessageUtils;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImBoolean;
-import io.avaje.config.Config;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 
@@ -24,23 +23,24 @@ import java.util.List;
  * Supports {@code + - * / % ^}, parentheses, and the constants
  * {@code pi} and {@code e}. An explicit {@code =} prefix always
  * triggers evaluation; plain expressions like {@code 69 + 420} are
- * auto-detected when {@link #autoDetect} is enabled.
+ * auto-detected when {@link #autoDetect.get()} is enabled.
  */
-public class MathChat extends Module implements Menu {
+public class MathChat extends Module {
 
     public static final MathChat instance = new MathChat();
+
+    private final Settings.Bool autoDetect =
+        bool("Auto-detect expressions", "autoDetect", "Evaluate bare math without a = prefix", true);
 
     private static final int MAX_HISTORY = 50;
     private static final int COLOR_EXPR = 0xFFBBBBBB;
     private static final int COLOR_RESULT = 0xFF55FF55;
     private static final int COLOR_ERROR = 0xFFFF5555;
 
-    private boolean autoDetect;
     private final List<String> history = new ArrayList<>();
 
     public MathChat() {
-        super("mathchat", "Math Chat", "Evaluate math expressions in chat.", "Utility");
-        autoDetect = Config.getBool(baseConfig + ".autoDetect", true);
+        super("mathchat", "Math Chat", "Evaluate math expressions in chat.", Category.UTILITY);
     }
 
     @EventHandler
@@ -56,7 +56,7 @@ public class MathChat extends Module implements Menu {
         if (expr.isEmpty()) return;
 
         if (!explicit) {
-            if (!autoDetect) return;
+            if (!autoDetect.get()) return;
             if (!MathExprParser.looksLikeMath(expr)) return;
         }
 
@@ -105,11 +105,7 @@ public class MathChat extends Module implements Menu {
 
             if (ImGui.checkbox("Enabled##mathEnabled", isActive())) toggle();
 
-            ImBoolean autoBox = new ImBoolean(autoDetect);
-            if (ImGui.checkbox("Auto-detect expressions", autoBox)) {
-                autoDetect = autoBox.get();
-                Config.setProperty(baseConfig + ".autoDetect", String.valueOf(autoDetect));
-            }
+            if (ImGui.checkbox("Auto-detect expressions", autoDetect.get())) autoDetect.set(!autoDetect.get());
             if (ImGui.isItemHovered()) {
                 ImGui.setTooltip("When enabled, expressions like '69 + 420' are evaluated automatically.\n"
                     + "When disabled, prefix with = to evaluate (e.g. '=69 + 420').");

@@ -2,15 +2,16 @@ package com.tricrotism.modules.blink;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
+import com.tricrotism.api.testing.TestLog;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.utils.KeybindUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
@@ -20,12 +21,14 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Blink — queues all outbound packets while active. On deactivate,
- * flushes them to the server in order so movement + interactions replay.
+ * Blink queues all outbound packets while active. On deactivate it
+ * flushes them to the server in order so movement and interactions replay.
  */
-public class Blink extends Module implements Menu {
+public class Blink extends Module {
 
     public static final Blink instance = new Blink();
+
+    private final Settings.Key keybind = key("Toggle", "keybind", "Activation key", GLFW.GLFW_KEY_O);
 
     private final Queue<Packet<?>> packetQueue = new ConcurrentLinkedQueue<>();
     private final BlinkRenderer renderer = new BlinkRenderer();
@@ -33,11 +36,10 @@ public class Blink extends Module implements Menu {
     @Getter
     private volatile boolean flushing;
 
-    private boolean awaitingKeybind;
     private boolean keyWasDown;
 
     public Blink() {
-        super("blink", "Blink", "Queue outbound packets, replay on disable.", "Network");
+        super("blink", "Blink", "Queue outbound packets, replay on disable.", Category.NETWORK);
         renderer.register();
     }
 
@@ -47,6 +49,8 @@ public class Blink extends Module implements Menu {
         return true;
     }
 
+    private long heldSinceMs;
+
     public int queueSize() {
         return packetQueue.size();
     }
@@ -55,7 +59,9 @@ public class Blink extends Module implements Menu {
     public void onActivate() {
         packetQueue.clear();
         renderer.onActivate();
-        SageFang.LOGGER.info("[Blink] Activated — capturing packets");
+        heldSinceMs = System.currentTimeMillis();
+        SageFang.LOGGER.info("[Blink] Activated, capturing packets");
+        TestLog.event("blink_hold_start");
     }
 
     @Override
@@ -73,6 +79,9 @@ public class Blink extends Module implements Menu {
 
         int count = packetQueue.size();
         SageFang.LOGGER.info("[Blink] Flushing {} queued packets", count);
+        TestLog.event("blink_flush",
+            "packets", count,
+            "heldMs", heldSinceMs == 0L ? 0L : System.currentTimeMillis() - heldSinceMs);
 
         flushing = true;
         try {
@@ -93,7 +102,7 @@ public class Blink extends Module implements Menu {
             renderer.onTick();
         }
 
-        int key = getKeybind();
+        int key = keybind.get();
         if (key == GLFW.GLFW_KEY_UNKNOWN) return;
 
         boolean down = KeybindUtil.isKeyDown(key);
@@ -108,14 +117,6 @@ public class Blink extends Module implements Menu {
         if (isActive()) {
             toggle();
         }
-    }
-
-    private int getKeybind() {
-        return Config.getInt(baseConfig + ".keybind", GLFW.GLFW_KEY_O);
-    }
-
-    private void setKeybind(int key) {
-        Config.setProperty(baseConfig + ".keybind", String.valueOf(key));
     }
 
     @Override
@@ -137,16 +138,7 @@ public class Blink extends Module implements Menu {
 
             ImGui.separator();
 
-            int result = KeybindUtil.renderKeybindButton("Toggle", "blinkKeybind", getKeybind(), awaitingKeybind);
-            if (result == KeybindUtil.START_LISTENING) {
-                awaitingKeybind = true;
-            } else if (result == KeybindUtil.CLEAR_BIND) {
-                setKeybind(GLFW.GLFW_KEY_UNKNOWN);
-                awaitingKeybind = false;
-            } else if (result != KeybindUtil.NO_CHANGE) {
-                setKeybind(result);
-                awaitingKeybind = false;
-            }
+            keybind.render();
 
             ImGui.end();
         } catch (Exception e) {

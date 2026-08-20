@@ -22,7 +22,7 @@ public class LogMenu implements Menu {
         if (!Config.getBool(VISIBLE_KEY, false)) return;
 
         int flags = ImGuiWindowFlags.None;
-        if (Minecraft.getInstance().screen == null) flags |= ImGuiWindowFlags.NoInputs;
+        if (Minecraft.getInstance().gui.screen() == null) flags |= ImGuiWindowFlags.NoInputs;
 
         ImGui.setNextWindowBgAlpha(0.55f);
         ImGui.begin("SageFang Log", flags);

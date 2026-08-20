@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Packets" option is on, then sends them all at once via {@link #release()}.
  * <p>
  * Captured from the network thread in {@code ConnectionMixin}; released and
- * cleared from the render thread via the settings menu — hence the concurrent
+ * cleared from the render thread via the settings menu, hence the concurrent
  * queue. {@link #isReleasing()} guards the mixin so released packets aren't
  * re-captured, mirroring Blink's flush flag.
  */

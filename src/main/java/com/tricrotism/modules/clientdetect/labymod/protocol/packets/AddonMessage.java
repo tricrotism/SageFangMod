@@ -12,7 +12,7 @@ import lombok.Getter;
  * <p>Registered clientbound under ID {@code 32} in
  * {@code LabyConnectClient.registerPackets()}. It is not dispatched by
  * {@code LabyConnectSession} and falls through to the "unhandled packet"
- * debug log — SageFang ignores addon traffic entirely.
+ * debug log. SageFang ignores addon traffic entirely.
  */
 @Getter
 public class AddonMessage extends Packet {

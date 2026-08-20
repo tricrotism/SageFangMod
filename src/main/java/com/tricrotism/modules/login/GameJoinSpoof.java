@@ -1,115 +1,61 @@
 package com.tricrotism.modules.login;
 
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
 
 /**
- * Spoofs client-side fields of the {@code ClientboundLoginPacket} (join game) —
+ * Spoofs client-side fields of the {@code ClientboundLoginPacket} (join game):
  * hardcore hearts, reduced-debug HUD, death screen, limited crafting, secure-chat
  * enforcement, and the reported max-players / view / simulation distances. Applied
- * by {@code ClientboundLoginPacketMixin}, which reads these getters. Ints of -1
+ * by {@code ClientboundLoginPacketMixin}, which reads the getters below. Ints of -1
  * mean "leave as sent". Ported from the Meteor addon's game-join-spoof.
  */
-public final class GameJoinSpoof extends Module implements Menu {
+public final class GameJoinSpoof extends Module {
 
     public static final GameJoinSpoof instance = new GameJoinSpoof();
 
-    private boolean hardcore;
-    private boolean reducedDebugInfo;
-    private boolean showDeathScreen;
-    private boolean limitedCrafting;
-    private boolean secureChat;
-    private int maxPlayers;
-    private int viewDistance;
-    private int simDistance;
+    private final Settings.Bool hardcore =
+        bool("Hardcore", "hardcore", "Report hardcore hearts", false);
+    private final Settings.Bool reducedDebugInfo =
+        bool("Reduced Debug Info", "reducedDebug", "Report the reduced-debug HUD flag", false);
+    private final Settings.Bool showDeathScreen =
+        bool("Show Death Screen", "deathScreen", "Report the death-screen flag", true);
+    private final Settings.Bool limitedCrafting =
+        bool("Limited Crafting", "limitedCrafting", "Report limited crafting", false);
+    private final Settings.Bool secureChat =
+        bool("Enforce Secure Chat", "secureChat", "Report secure-chat enforcement", true);
+    private final Settings.Int maxPlayers =
+        integer("Max Players", "maxPlayers", "Reported max players; -1 leaves it as sent", -1, -1, 2000);
+    private final Settings.Int viewDistance =
+        integer("View Distance", "viewDistance", "Reported view distance; -1 leaves it as sent", -1, -1, 128);
+    private final Settings.Int simDistance =
+        integer("Simulation Distance", "simDistance", "Reported sim distance; -1 leaves it as sent", -1, -1, 128);
 
     private GameJoinSpoof() {
-        super("gamejoinspoof", "Game Join Spoof", "Spoof client-side join-game flags.", "Network");
-        hardcore = Config.getBool(baseConfig + ".hardcore", false);
-        reducedDebugInfo = Config.getBool(baseConfig + ".reducedDebug", false);
-        showDeathScreen = Config.getBool(baseConfig + ".deathScreen", true);
-        limitedCrafting = Config.getBool(baseConfig + ".limitedCrafting", false);
-        secureChat = Config.getBool(baseConfig + ".secureChat", true);
-        maxPlayers = Config.getInt(baseConfig + ".maxPlayers", -1);
-        viewDistance = Config.getInt(baseConfig + ".viewDistance", -1);
-        simDistance = Config.getInt(baseConfig + ".simDistance", -1);
+        super("gamejoinspoof", "Game Join Spoof", "Spoof client-side join-game flags.", Category.NETWORK);
     }
 
-    public boolean getHardcore() {
-        return hardcore;
-    }
+    public boolean getHardcore() {return hardcore.get();}
 
-    public boolean getReducedDebugInfo() {
-        return reducedDebugInfo;
-    }
+    public boolean getReducedDebugInfo() {return reducedDebugInfo.get();}
 
-    public boolean getShowDeathScreen() {
-        return showDeathScreen;
-    }
+    public boolean getShowDeathScreen() {return showDeathScreen.get();}
 
-    public boolean getLimitedCrafting() {
-        return limitedCrafting;
-    }
+    public boolean getLimitedCrafting() {return limitedCrafting.get();}
 
-    public boolean getSecureChat() {
-        return secureChat;
-    }
+    public boolean getSecureChat() {return secureChat.get();}
 
-    public int getMaxPlayers() {
-        return maxPlayers;
-    }
+    public int getMaxPlayers() {return maxPlayers.get();}
 
-    public int getViewDistance() {
-        return viewDistance;
-    }
+    public int getViewDistance() {return viewDistance.get();}
 
-    public int getSimDistance() {
-        return simDistance;
-    }
+    public int getSimDistance() {return simDistance.get();}
 
     @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.AlwaysAutoResize);
-
-        if (ImGui.checkbox("Enabled##gameJoinEnabled", isActive())) toggle();
-        ImGui.separator();
-
-        hardcore = boolRow("Hardcore##gjHardcore", hardcore, ".hardcore");
-        reducedDebugInfo = boolRow("Reduced Debug Info##gjReducedDebug", reducedDebugInfo, ".reducedDebug");
-        showDeathScreen = boolRow("Show Death Screen##gjDeathScreen", showDeathScreen, ".deathScreen");
-        limitedCrafting = boolRow("Limited Crafting##gjLimitedCrafting", limitedCrafting, ".limitedCrafting");
-        secureChat = boolRow("Enforce Secure Chat##gjSecureChat", secureChat, ".secureChat");
-
-        maxPlayers = intRow("Max Players##gjMaxPlayers", maxPlayers, -1, 2000, ".maxPlayers");
-        viewDistance = intRow("View Distance##gjViewDistance", viewDistance, -1, 128, ".viewDistance");
-        simDistance = intRow("Simulation Distance##gjSimDistance", simDistance, -1, 128, ".simDistance");
+    protected void renderExtra(ImGuiIO io) {
         ImGui.textDisabled("(-1 = leave as sent by server)");
-
-        ImGui.end();
-    }
-
-    private boolean boolRow(String id, boolean value, String key) {
-        if (ImGui.checkbox(id, value)) {
-            value = !value;
-            Config.setProperty(baseConfig + key, String.valueOf(value));
-        }
-        return value;
-    }
-
-    private int intRow(String id, int value, int min, int max, String key) {
-        int[] v = {value};
-        ImGui.setNextItemWidth(160);
-        if (ImGui.sliderInt(id, v, min, max)) {
-            value = v[0];
-            Config.setProperty(baseConfig + key, String.valueOf(value));
-        }
-        return value;
     }
 }

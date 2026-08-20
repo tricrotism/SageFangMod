@@ -37,7 +37,7 @@ repositories {
     }
 }
 
-// MC 1.21.10 ships lwjgl-stb 3.3.3 — imgui-java's BOM upgrades it to 3.3.4
+// MC 1.21.10 ships lwjgl-stb 3.3.3; imgui-java's BOM upgrades it to 3.3.4
 // which removed nstbir_resize_uint8, breaking NativeImage.resizeSubRectTo
 configurations.all {
     resolutionStrategy {

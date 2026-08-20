@@ -3,6 +3,7 @@ package com.tricrotism.mixin.impl.screen;
 import com.tricrotism.SageFang;
 import com.tricrotism.config.SageFangConfig;
 import com.tricrotism.mixin.accessors.misc.ServerResourcePackManager$PackEntryAccessor;
+import com.tricrotism.utils.ScheduledTaskRunner;
 import lombok.extern.slf4j.Slf4j;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.resources.server.ServerPackManager;
@@ -15,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.zip.ZipEntry;
@@ -43,7 +45,7 @@ public class ServerPackManagerMixin {
             ServerResourcePackManager$PackEntryAccessor accessor = (ServerResourcePackManager$PackEntryAccessor) serverPackData;
             Path path = accessor.getPath();
 
-            new Thread(() -> {
+            ScheduledTaskRunner.run(() -> {
                 try (ZipFile zipFile = new ZipFile(new File(path.toUri()))) {
                     File PATH = FabricLoader.getInstance().getGameDir().toFile();
 
@@ -60,19 +62,20 @@ public class ServerPackManagerMixin {
 
                     int counter = 1;
                     while (outZip.exists()) {
-                        String versionedName = path.getFileName().toString() + ".out.zip (" + counter + ")";
-                        outZip = new File(packsDir, versionedName);
+                        outZip = new File(packsDir, originalName + ".out (" + counter + ").zip");
                         counter++;
                     }
 
-                    try (FileOutputStream out = new FileOutputStream(outZip)) {
-                        ZipOutputStream zipOut = new ZipOutputStream(out);
+                    try (FileOutputStream out = new FileOutputStream(outZip);
+                         ZipOutputStream zipOut = new ZipOutputStream(out)) {
                         zipFile.entries().asIterator().forEachRemaining(entry -> {
                             try {
-                                ZipEntry newEntry = new ZipEntry(entry.getName());
-                                byte[] bytes = zipFile.getInputStream(newEntry).readAllBytes();
-                                zipOut.putNextEntry(newEntry);
-                                zipOut.write(bytes, 0, bytes.length);
+                                zipOut.putNextEntry(new ZipEntry(entry.getName()));
+                                if (!entry.isDirectory()) {
+                                    try (InputStream in = zipFile.getInputStream(entry)) {
+                                        in.transferTo(zipOut);
+                                    }
+                                }
                                 zipOut.closeEntry();
                             } catch (IOException exception) {
                                 log.error("Failed to process entry {} in pack", entry.getName(), exception);
@@ -84,7 +87,7 @@ public class ServerPackManagerMixin {
                 } catch (IOException exception) {
                     log.error("Failed to save pack", exception);
                 }
-            }).start();
+            });
         }
 
     }

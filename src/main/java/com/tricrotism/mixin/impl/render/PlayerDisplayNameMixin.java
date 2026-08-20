@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * When {@link RealPlayerNames} is active, replaces a player's display name with
  * their raw account name, so nicked / team-decorated names resolve to the real
- * one — most visibly on the name tag above the head.
+ * one, most visibly on the name tag above the head.
  */
 @Mixin(Player.class)
 public class PlayerDisplayNameMixin {

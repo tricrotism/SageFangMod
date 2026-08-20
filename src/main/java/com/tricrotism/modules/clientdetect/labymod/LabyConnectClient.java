@@ -99,7 +99,7 @@ public class LabyConnectClient {
      * Opens the LabyConnect connection asynchronously. No-op if already
      * connected. On success a fresh {@link LabyConnectSession} is created and
      * the handshake is kicked off by sending a {@link HelloPing}; on failure
-     * the event-loop group is shut down. The connect itself is non-blocking —
+     * the event-loop group is shut down. The connect itself is non-blocking, and
      * the listener fires on the event loop.
      */
     public void connect() {
@@ -178,7 +178,7 @@ public class LabyConnectClient {
      *
      * @param packet     the packet to send; its class must be registered
      * @param afterWrite optional callback run on the event loop right after the
-     *                   flush is issued — used by the encryption handshake to
+     *                   flush is issued. Used by the encryption handshake to
      *                   splice cipher handlers into the pipeline once the
      *                   {@code EncryptionResponse} is on the wire. May be {@code null}.
      */

@@ -10,7 +10,7 @@ public class ColorPalette {
     public static final TextColor INFO = TextColor.color(23, 162, 184);
     public static final TextColor SUCCESS = TextColor.color(40, 167, 69);
 
-    // ===== REDS & ORANGES =====
+    // Reds and oranges
     public static final TextColor DARK_RED = TextColor.color(139, 0, 0);
     public static final TextColor RED = ERROR;
     public static final TextColor LIGHT_RED = TextColor.color(255, 102, 102);
@@ -22,7 +22,7 @@ public class ColorPalette {
     public static final TextColor FIRE_ORANGE = TextColor.color(242, 92, 5);
     public static final TextColor DARK_CHERRY = TextColor.color(178, 58, 72);
 
-    // ===== YELLOWS & GOLDS =====
+    // Yellows and golds
     public static final TextColor GOLD = TextColor.color(255, 196, 0);
     public static final TextColor YELLOW = TextColor.color(255, 235, 59);
     public static final TextColor GOLDEN_YELLOW = TextColor.color(255, 214, 10);
@@ -33,7 +33,7 @@ public class ColorPalette {
     public static final TextColor MUSTARD = TextColor.color(238, 198, 67);
     public static final TextColor DARK_GOLD = TextColor.color(201, 162, 39);
 
-    // ===== GREENS =====
+    // Greens
     public static final TextColor DARK_GREEN = TextColor.color(6, 64, 43);
     public static final TextColor GREEN = SUCCESS;
     public static final TextColor LIGHT_GREEN = TextColor.color(102, 187, 106);
@@ -45,7 +45,7 @@ public class ColorPalette {
     public static final TextColor JUNGLE_GREEN = TextColor.color(0, 127, 95);
     public static final TextColor MOSS = TextColor.color(1, 77, 64);
 
-    // ===== BLUES & CYAN'S =====
+    // Blues and cyans
     public static final TextColor DARK_BLUE = TextColor.color(36, 60, 110);
     public static final TextColor BLUE = INFO;
     public static final TextColor HIGHLIGHT_BLUE = TextColor.color(0, 191, 255);
@@ -57,7 +57,7 @@ public class ColorPalette {
     public static final TextColor NAVY = TextColor.color(0, 78, 137);
     public static final TextColor MIDNIGHT_BLUE = TextColor.color(2, 62, 125);
 
-    // ===== PURPLES & VIOLETS =====
+    // Purples and violets
     public static final TextColor DARKISH_PURPLE = TextColor.color(106, 27, 154);
     public static final TextColor LIGHT_PURPLE = TextColor.color(149, 117, 205);
     public static final TextColor BLURPLE = TextColor.color(69, 79, 191);
@@ -69,7 +69,7 @@ public class ColorPalette {
     public static final TextColor ELECTRIC_VIOLET = TextColor.color(147, 54, 253);
     public static final TextColor DARK_PLUM = TextColor.color(60, 9, 108);
 
-    // ===== PINKS & MAGENTA'S =====
+    // Pinks and magentas
     public static final TextColor HOT_PINK = TextColor.color(255, 45, 85);
     public static final TextColor ROSE_PINK = TextColor.color(255, 111, 145);
     public static final TextColor BUBBLEGUM = TextColor.color(241, 91, 181);
@@ -78,14 +78,14 @@ public class ColorPalette {
     public static final TextColor NEON_FUCHSIA = TextColor.color(255, 60, 172);
     public static final TextColor WINE_ROSE = TextColor.color(164, 19, 60);
 
-    // ===== WHITES =====
+    // Whites
     public static final TextColor DARK_OFF_WHITE = TextColor.color(189, 189, 189);
     public static final TextColor OFF_WHITE = TextColor.color(224, 224, 224);
     public static final TextColor ALABASTER = TextColor.color(250, 250, 250);
     public static final TextColor IVORY = TextColor.color(255, 253, 240);
     public static final TextColor WHITE = OFF_WHITE;
 
-    // ===== GRAYS =====
+    // Grays
     public static final TextColor LIGHT_GRAY = TextColor.color(222, 226, 230);
     public static final TextColor SOFT_GRAY = TextColor.color(200, 200, 200);
     public static final TextColor SILVER = TextColor.color(192, 192, 192);
@@ -96,7 +96,7 @@ public class ColorPalette {
     public static final TextColor GRAPHITE = TextColor.color(33, 37, 41);
     public static final TextColor NEUTRAL = TextColor.color(108, 117, 125);
 
-    // ===== BLACK =====
+    // Black
     public static final TextColor BLACK = TextColor.color(0, 0, 0);
     public static final TextColor RICH_BLACK = TextColor.color(28, 28, 30);
     public static final TextColor JET_BLACK = TextColor.color(20, 20, 20);

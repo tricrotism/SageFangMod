@@ -96,9 +96,9 @@ public class LabyConnectSession {
     }
 
     /**
-     * Responds to the server's {@code HelloPong} by sending the login burst —
-     * {@link LoginVersion}, {@link LoginData} (local profile id + name) and
-     * {@link LoginOptions} — and advances to {@link State#LOGIN}.
+     * Responds to the server's {@code HelloPong} by sending the login burst of
+     * {@link LoginVersion}, {@link LoginData} (local profile id and name) and
+     * {@link LoginOptions}, then advances to {@link State#LOGIN}.
      */
     private void handleHelloPong(HelloPong pong) {
         SageFang.LOGGER.info("[LabyConnect] HelloPong received, sending login packets");
@@ -146,7 +146,7 @@ public class LabyConnectSession {
                 System.arraycopy(serverToken, 0, verifyToken10, 0, Math.min(serverToken.length, 4));
                 byte[] encryptedVerify = Crypt.encryptUsingKey(publicKey, verifyToken10);
 
-                byte[] emptyPin = new byte[0]; // no PIN — send raw empty, NOT encrypted
+                byte[] emptyPin = new byte[0]; // no PIN, so send raw empty, NOT encrypted
 
                 client.sendPacket(new EncryptionResponse(
                     encryptedSecret,
@@ -177,7 +177,7 @@ public class LabyConnectSession {
      * from the shared secret and public key, then POSTs the access token,
      * profile id and hash. Retries up to 3 times with exponential backoff
      * (2s/4s/8s) on HTTP 429 rate-limiting; any other non-2xx status throws.
-     * Blocking — must be called off the event loop.
+     * Blocking. Must be called off the event loop.
      */
     private void authenticate(String serverId, PublicKey publicKey, SecretKey secretKey) throws Exception {
         byte[] hash = Crypt.digestData(serverId, publicKey, secretKey);

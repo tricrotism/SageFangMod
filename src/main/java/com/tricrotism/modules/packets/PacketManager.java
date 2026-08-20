@@ -2,8 +2,9 @@ package com.tricrotism.modules.packets;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameJoinedEvent;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
@@ -30,22 +31,27 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * Intercepts, logs, delays, and allows manipulation of all network packets.
  * <p>
  * Outbound packets can be delayed (all, or only selected types) and flushed/dropped on demand.
- * Inbound packets are logged and inspected (not delayed — would break game state).
+ * Inbound packets are logged and inspected, never delayed, since that would break game state.
  * <p>
  * On server join, a watchdog checks whether expected protocol packets arrived
  * within a grace period and alerts the player if any are missing.
  */
-public class PacketManager extends Module implements Menu {
+public class PacketManager extends Module {
 
     public static final PacketManager instance = new PacketManager();
+
+    private final Settings.Key keybind = key("Toggle", "keybind", "Toggle packet delaying", GLFW.GLFW_KEY_UNKNOWN);
+
+    private final Settings.Bool delayOutbound =
+        bool("Delay Outbound", "delayOutbound", "Queue outbound packets instead of sending", false);
+    private final Settings.Bool logPackets =
+        bool("Log Packets", "logPackets", "Record packets to the log view", true);
 
     private final Deque<QueuedPacket> outboundQueue = new ConcurrentLinkedDeque<>();
 
     @Getter
     private volatile boolean flushingOutbound;
 
-    private boolean delayOutbound;
-    private boolean logPackets;
 
     /**
      * When non-empty, only packets whose short name is in this set get delayed.
@@ -77,13 +83,12 @@ public class PacketManager extends Module implements Menu {
     private static final int GRACE_TICKS = 100;
 
     private boolean keyWasDown;
-    private boolean awaitingKeybind;
 
     private final ImString filterText = new ImString(128);
     private final ImString delayFilterInput = new ImString(128);
 
     public PacketManager() {
-        super("packetmanager", "Packet Manager", "Intercept, delay, and inspect all packets.", "Network");
+        super("packetmanager", "Packet Manager", "Intercept, delay, and inspect all packets.", Category.NETWORK);
         String saved = Config.get(baseConfig + ".delayFilter", "");
         if (!saved.isBlank()) {
             for (String s : saved.split(",")) {
@@ -93,14 +98,6 @@ public class PacketManager extends Module implements Menu {
         }
     }
 
-    private int getKeybind() {
-        return Config.getInt(baseConfig + ".keybind", GLFW.GLFW_KEY_UNKNOWN);
-    }
-
-    private void setKeybind(int key) {
-        Config.setProperty(baseConfig + ".keybind", String.valueOf(key));
-    }
-
     public boolean captureOutbound(Packet<?> packet) {
         if (!isActive()) return false;
 
@@ -108,7 +105,7 @@ public class PacketManager extends Module implements Menu {
         logPacket("OUT", name);
         seenOutboundTypes.add(name);
 
-        if (delayOutbound) {
+        if (delayOutbound.get()) {
             if (!delayFilter.isEmpty() && !delayFilter.contains(name)) {
                 return false;
             }
@@ -130,15 +127,13 @@ public class PacketManager extends Module implements Menu {
 
     @Override
     public void onActivate() {
-        delayOutbound = Config.getBool(baseConfig + ".delayOutbound", false);
-        logPackets = Config.getBool(baseConfig + ".logPackets", true);
         SageFang.LOGGER.info("[PacketManager] Activated");
     }
 
     @Override
     public void onDeactivate() {
         flushOutbound();
-        SageFang.LOGGER.info("[PacketManager] Deactivated — flushed outbound queue");
+        SageFang.LOGGER.info("[PacketManager] Deactivated, flushed outbound queue");
     }
 
     private void flushOutbound() {
@@ -181,7 +176,7 @@ public class PacketManager extends Module implements Menu {
             }
         }
 
-        int key = getKeybind();
+        int key = keybind.get();
         if (key != GLFW.GLFW_KEY_UNKNOWN) {
             boolean down = KeybindUtil.isKeyDown(key);
             if (down && !keyWasDown) {
@@ -228,7 +223,7 @@ public class PacketManager extends Module implements Menu {
     }
 
     private void logPacket(String direction, String name) {
-        if (!logPackets) return;
+        if (!logPackets.get()) return;
         synchronized (packetLog) {
             packetLog.addLast(new PacketLogEntry(direction, name, System.currentTimeMillis()));
             while (packetLog.size() > MAX_LOG) packetLog.pollFirst();
@@ -256,30 +251,16 @@ public class PacketManager extends Module implements Menu {
             }
             ImGui.separator();
 
-            int result = KeybindUtil.renderKeybindButton("Toggle", "pmKeybind", getKeybind(), awaitingKeybind);
-            if (result == KeybindUtil.START_LISTENING) {
-                awaitingKeybind = true;
-            } else if (result == KeybindUtil.CLEAR_BIND) {
-                setKeybind(GLFW.GLFW_KEY_UNKNOWN);
-                awaitingKeybind = false;
-            } else if (result != KeybindUtil.NO_CHANGE) {
-                setKeybind(result);
-                awaitingKeybind = false;
-            }
+            keybind.render();
 
             ImGui.separatorText("Controls");
 
-            if (ImGui.checkbox("Delay Outbound##pmDelayOut", delayOutbound)) {
-                delayOutbound = !delayOutbound;
-                Config.setProperty(baseConfig + ".delayOutbound", String.valueOf(delayOutbound));
-            }
+            if (ImGui.checkbox("Delay Outbound##pmDelayOut", delayOutbound.get()))
+                delayOutbound.set(!delayOutbound.get());
             ImGui.sameLine();
             ImGui.text("(" + outboundQueue.size() + ")");
 
-            if (ImGui.checkbox("Log Packets##pmLog", logPackets)) {
-                logPackets = !logPackets;
-                Config.setProperty(baseConfig + ".logPackets", String.valueOf(logPackets));
-            }
+            if (ImGui.checkbox("Log Packets##pmLog", logPackets.get())) logPackets.set(!logPackets.get());
 
             ImGui.separatorText("Delay Filter");
             if (delayFilter.isEmpty()) {

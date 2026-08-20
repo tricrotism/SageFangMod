@@ -29,7 +29,7 @@ public class LoginOptions extends Packet {
      */
     @Override
     public void write(PacketBuffer buf) {
-        //writeBoolean | ShowServer — let friends see the server we're on
+        //writeBoolean | ShowServer, lets friends see the server we're on
         buf.writeBoolean(true);
         //writeByte | status ONLINE
         buf.writeByte(0);

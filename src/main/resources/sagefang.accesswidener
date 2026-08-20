@@ -3,4 +3,5 @@ accessible class net/minecraft/client/resources/server/ServerPackManager$ServerP
 accessible class net/minecraft/world/item/component/ResolvableProfile
 accessible class net/minecraft/world/item/component/ResolvableProfile$Partial
 accessible method net/minecraft/network/chat/contents/TranslatableContents filterAllowedArguments (Ljava/lang/Object;)Lcom/mojang/serialization/DataResult;
+accessible method net/minecraft/client/renderer/rendertype/RenderType create (Ljava/lang/String;Lnet/minecraft/client/renderer/rendertype/RenderSetup;)Lnet/minecraft/client/renderer/rendertype/RenderType;
 accessible field net/minecraft/world/item/component/ResolvableProfile$Partial MAP_CODEC Lcom/mojang/serialization/MapCodec;

@@ -1,8 +1,9 @@
 package com.tricrotism.modules.world;
 
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.mixin.accessors.ClientLevelAccessor;
 import imgui.ImGui;
@@ -25,12 +26,25 @@ import net.minecraft.world.phys.HitResult;
  * digs with occasional {@code START → ABORT↓0 → START → STOP} cheat cycles to
  * confuse anti-cheats, plus Reversed/Normal pair modes. Ported from the Meteor
  * addon's fast-mine; the Vanilla/Current sequence modes use the vanilla
- * prediction handler via {@code ClientLevelAccessor}, and manual mode is enforced
+ * prediction handler via {@code ClientLevelAccessor}, and manual.get() mode is enforced
  * by {@code MultiPlayerGameModeMixin}.
  */
-public final class FastMine extends Module implements Menu {
+public final class FastMine extends Module {
 
     public static final FastMine instance = new FastMine();
+
+    private final Settings.Int customSequence = integer("Custom Seq", "customSequence", "Sequence number for Custom mode", 0, 0, 100000);
+    private final Settings.Bool abortAfter = bool("Abort After", "abortAfter", "Send abort-destroy after the cheat", false);
+    private final Settings.Decimal speed = decimal("Speed", "speed", "Break-progress multiplier", 1.0, 0.1, 5.0);
+    private final Settings.Int normalsBeforeCheat = integer("Normals Before Cheat", "normalsBeforeCheat", "Vanilla breaks before cheating", 2, 0, 20);
+    private final Settings.Bool doubleStop = bool("Double Stop", "doubleStop", "Send a second stop packet", true);
+    private final Settings.Int doubleStopEvery = integer("Double Stop Every", "doubleStopEvery", "Breaks between double-stops", 5, 1, 20);
+    private final Settings.Bool waitForBreak = bool("Wait For Break", "waitForBreak", "Wait for the block to break", true);
+    private final Settings.Int retryTicks = integer("Retry Ticks", "retryTicks", "Ticks before retrying", 8, 1, 40);
+    private final Settings.Bool manual = bool("Manual (hold attack)", "manual", "Only mine while attack is held", true);
+    private final Settings.Int cycleDelay = integer("Cycle Delay", "cycleDelay", "Ticks between cycles", 0, 0, 20);
+    private final Settings.Bool noSwing = bool("No Swing", "noSwing", "Skip the swing packet", false);
+    private final Settings.Bool swingEachPacket = bool("Swing Each Packet", "swingEachPacket", "Swing on every packet", false);
 
     public enum SequenceMode {Vanilla, Current, Zero, Custom}
 
@@ -47,18 +61,6 @@ public final class FastMine extends Module implements Menu {
     private PacketOrder packetOrder;
     private SequenceMode sequenceMode;
     private TimingMode timingMode;
-    private int customSequence;
-    private boolean abortAfter;
-    private double speed;
-    private int normalsBeforeCheat;
-    private boolean doubleStop;
-    private int doubleStopEvery;
-    private boolean waitForBreak;
-    private int retryTicks;
-    private boolean manual;
-    private int cycleDelay;
-    private boolean noSwing;
-    private boolean swingEachPacket;
 
     private Phase phase = Phase.Idle;
     private BlockPos targetPos;
@@ -71,29 +73,17 @@ public final class FastMine extends Module implements Menu {
     private boolean cheatNext;
 
     private FastMine() {
-        super("fastmine", "Fast Mine", "AbortRestart / packet-cycle mining.", "World");
+        super("fastmine", "Fast Mine", "AbortRestart / packet-cycle mining.", Category.WORLD);
         packetOrder = enumOf(PacketOrder.values(), ".order", 2);
         sequenceMode = enumOf(SequenceMode.values(), ".sequenceMode", 0);
         timingMode = enumOf(TimingMode.values(), ".timing", 1);
-        customSequence = Config.getInt(baseConfig + ".customSequence", 0);
-        abortAfter = Config.getBool(baseConfig + ".abortAfter", false);
-        speed = parseDouble(Config.get(baseConfig + ".speed", "1.0"), 1.0);
-        normalsBeforeCheat = Config.getInt(baseConfig + ".normalsBeforeCheat", 2);
-        doubleStop = Config.getBool(baseConfig + ".doubleStop", true);
-        doubleStopEvery = Config.getInt(baseConfig + ".doubleStopEvery", 5);
-        waitForBreak = Config.getBool(baseConfig + ".waitForBreak", true);
-        retryTicks = Config.getInt(baseConfig + ".retryTicks", 8);
-        manual = Config.getBool(baseConfig + ".manual", true);
-        cycleDelay = Config.getInt(baseConfig + ".cycleDelay", 0);
-        noSwing = Config.getBool(baseConfig + ".noSwing", false);
-        swingEachPacket = Config.getBool(baseConfig + ".swingEachPacket", false);
     }
 
     /**
      * Used by MultiPlayerGameModeMixin to suppress vanilla mining.
      */
     public boolean isManualMode() {
-        return manual;
+        return manual.get();
     }
 
     private boolean isAbortRestart() {
@@ -132,7 +122,8 @@ public final class FastMine extends Module implements Menu {
                 mc.getConnection().send(new ServerboundPlayerActionPacket(action, pos, dir, seq));
             }
             case Zero -> mc.getConnection().send(new ServerboundPlayerActionPacket(action, pos, dir, 0));
-            case Custom -> mc.getConnection().send(new ServerboundPlayerActionPacket(action, pos, dir, customSequence));
+            case Custom ->
+                mc.getConnection().send(new ServerboundPlayerActionPacket(action, pos, dir, customSequence.get()));
         }
     }
 
@@ -148,12 +139,12 @@ public final class FastMine extends Module implements Menu {
     }
 
     private void sendAbortZero(BlockPos pos, Direction dir) {
-        if (mc.getConnection() == null || !abortAfter) return;
+        if (mc.getConnection() == null || !abortAfter.get()) return;
         mc.getConnection().send(new ServerboundPlayerActionPacket(Action.ABORT_DESTROY_BLOCK, pos, dir, 0));
     }
 
     private void swing() {
-        if (noSwing || mc.player == null) return;
+        if (noSwing.get() || mc.player == null) return;
         mc.player.swing(InteractionHand.MAIN_HAND);
     }
 
@@ -174,9 +165,9 @@ public final class FastMine extends Module implements Menu {
     }
 
     private void enterCooldownOrIdle() {
-        if (cycleDelay > 0) {
+        if (cycleDelay.get() > 0) {
             phase = Phase.Cooldown;
-            cooldown = cycleDelay;
+            cooldown = cycleDelay.get();
         } else {
             phase = Phase.Idle;
         }
@@ -188,13 +179,13 @@ public final class FastMine extends Module implements Menu {
 
     private void afterPairComplete(BlockPos pos, Direction dir) {
         sendAbortZero(pos, dir);
-        if (!swingEachPacket) swing();
+        if (!swingEachPacket.get()) swing();
         enterCooldownOrIdle();
     }
 
     private void finishPair(BlockPos pos, Direction dir) {
         sendSequenced(finishAction(), pos, dir);
-        if (swingEachPacket) swing();
+        if (swingEachPacket.get()) swing();
         afterPairComplete(pos, dir);
     }
 
@@ -202,7 +193,7 @@ public final class FastMine extends Module implements Menu {
         targetPos = pos;
         targetDirection = dir;
         sendSequenced(beginAction(), pos, dir);
-        if (swingEachPacket) swing();
+        if (swingEachPacket.get()) swing();
         if (timingMode == TimingMode.SameTick) {
             finishPair(pos, dir);
         } else {
@@ -218,17 +209,17 @@ public final class FastMine extends Module implements Menu {
         digsCompleted++;
         if (!wasCheat) {
             normalsDone++;
-            cheatNext = normalsBeforeCheat <= 0 || normalsDone >= normalsBeforeCheat;
+            cheatNext = normalsBeforeCheat.get() <= 0 || normalsDone >= normalsBeforeCheat.get();
             if (cheatNext) normalsDone = 0;
         } else {
-            cheatNext = normalsBeforeCheat <= 0;
+            cheatNext = normalsBeforeCheat.get() <= 0;
             normalsDone = 0;
         }
 
         clearCrack();
-        if (!swingEachPacket) swing();
+        if (!swingEachPacket.get()) swing();
 
-        boolean doDouble = doubleStop && doubleStopEvery > 0 && digsCompleted % doubleStopEvery == 0;
+        boolean doDouble = doubleStop.get() && doubleStopEvery.get() > 0 && digsCompleted % doubleStopEvery.get() == 0;
         if (doDouble) {
             targetPos = pos.immutable();
             targetDirection = dir;
@@ -239,7 +230,7 @@ public final class FastMine extends Module implements Menu {
     }
 
     private void enterWaitAckOrCooldown(BlockPos pos, Direction dir) {
-        if (waitForBreak) {
+        if (waitForBreak.get()) {
             targetPos = pos.immutable();
             targetDirection = dir;
             phase = Phase.WaitAck;
@@ -275,7 +266,7 @@ public final class FastMine extends Module implements Menu {
     }
 
     private void beginAbortRestartDig(BlockPos pos, Direction dir) {
-        if (cheatNext || normalsBeforeCheat <= 0) {
+        if (cheatNext || normalsBeforeCheat.get() <= 0) {
             beginCheatDig(pos, dir);
         } else {
             beginNormalDig(pos, dir);
@@ -287,12 +278,12 @@ public final class FastMine extends Module implements Menu {
         reset();
         normalsDone = 0;
         digsCompleted = 0;
-        cheatNext = normalsBeforeCheat <= 0;
+        cheatNext = normalsBeforeCheat.get() <= 0;
     }
 
     @Override
     public void onDeactivate() {
-        if (targetPos != null && mc.getConnection() != null && (isAbortRestart() || abortAfter)) {
+        if (targetPos != null && mc.getConnection() != null && (isAbortRestart() || abortAfter.get())) {
             Direction abortDir = isAbortRestart() ? Direction.DOWN
                 : (targetDirection != null ? targetDirection : Direction.DOWN);
             mc.getConnection().send(new ServerboundPlayerActionPacket(Action.ABORT_DESTROY_BLOCK, targetPos, abortDir, 0));
@@ -309,7 +300,7 @@ public final class FastMine extends Module implements Menu {
             return;
         }
 
-        if (manual && !mc.options.keyAttack.isDown()) {
+        if (manual.get() && !mc.options.keyAttack.isDown()) {
             if (phase != Phase.Idle && phase != Phase.Cooldown && targetPos != null) {
                 if (isAbortRestart()) sendAbortDownZero(targetPos);
                 else sendAbortZero(targetPos, targetDirection);
@@ -368,7 +359,7 @@ public final class FastMine extends Module implements Menu {
         if (phase == Phase.ExtraStop && targetPos != null) {
             Direction dir = targetDirection != null ? targetDirection : (lookDir != null ? lookDir : Direction.DOWN);
             sendSequenced(Action.STOP_DESTROY_BLOCK, targetPos, dir);
-            if (swingEachPacket) swing();
+            if (swingEachPacket.get()) swing();
             enterWaitAckOrCooldown(targetPos, dir);
             return;
         }
@@ -391,7 +382,7 @@ public final class FastMine extends Module implements Menu {
             }
             Direction dir = targetDirection != null ? targetDirection : (lookDir != null ? lookDir : Direction.DOWN);
             sendSequenced(Action.START_DESTROY_BLOCK, targetPos, dir);
-            if (swingEachPacket) swing();
+            if (swingEachPacket.get()) swing();
             phase = Phase.CheatStop;
             return;
         }
@@ -404,7 +395,7 @@ public final class FastMine extends Module implements Menu {
             }
             Direction dir = targetDirection != null ? targetDirection : (lookDir != null ? lookDir : Direction.DOWN);
             sendSequenced(Action.STOP_DESTROY_BLOCK, targetPos, dir);
-            if (swingEachPacket) swing();
+            if (swingEachPacket.get()) swing();
             afterStop(targetPos, dir, true);
             return;
         }
@@ -431,7 +422,7 @@ public final class FastMine extends Module implements Menu {
                 return;
             }
 
-            breakProgress += delta * speed;
+            breakProgress += delta * speed.get();
             int stage = Math.min((int) (breakProgress * 10.0), 9);
             mc.level.destroyBlockProgress(mc.player.getId(), targetPos, stage);
             swing();
@@ -439,7 +430,7 @@ public final class FastMine extends Module implements Menu {
             if (breakProgress >= 1.0) {
                 Direction dir = targetDirection != null ? targetDirection : (lookDir != null ? lookDir : Direction.DOWN);
                 sendSequenced(Action.STOP_DESTROY_BLOCK, targetPos, dir);
-                if (swingEachPacket) swing();
+                if (swingEachPacket.get()) swing();
                 afterStop(targetPos, dir, false);
             }
             return;
@@ -451,7 +442,7 @@ public final class FastMine extends Module implements Menu {
                 return;
             }
             ackTicks++;
-            if (ackTicks >= retryTicks) {
+            if (ackTicks >= retryTicks.get()) {
                 Direction dir = targetDirection != null ? targetDirection : (lookDir != null ? lookDir : Direction.DOWN);
                 if (lookPos != null && lookPos.equals(targetPos)) {
                     cheatNext = true;
@@ -491,61 +482,31 @@ public final class FastMine extends Module implements Menu {
         packetOrder = PacketOrder.values()[order];
         int seq = combo("Sequence##fmSeq", sequenceMode.ordinal(), SEQ_LABELS, ".sequenceMode");
         sequenceMode = SequenceMode.values()[seq];
-        if (sequenceMode == SequenceMode.Custom) {
-            int[] cs = {customSequence};
-            ImGui.setNextItemWidth(160);
-            if (ImGui.dragInt("Custom Seq##fmCustomSeq", cs)) {
-                customSequence = cs[0];
-                Config.setProperty(baseConfig + ".customSequence", String.valueOf(customSequence));
-            }
-        }
+        if (sequenceMode == SequenceMode.Custom) customSequence.render();
 
-        manual = boolRow("Manual (hold attack)##fmManual", manual, ".manual");
-        noSwing = boolRow("No Swing##fmNoSwing", noSwing, ".noSwing");
-        if (!noSwing) swingEachPacket = boolRow("Swing Each Packet##fmSwingEach", swingEachPacket, ".swingEachPacket");
-        cycleDelay = slider("Cycle Delay##fmCycleDelay", cycleDelay, 0, 20, ".cycleDelay");
+        manual.render();
+        noSwing.render();
+        if (!noSwing.get()) swingEachPacket.render();
+        cycleDelay.render();
 
         if (packetOrder == PacketOrder.AbortRestart) {
             ImGui.separatorText("AbortRestart");
-            float[] sp = {(float) speed};
-            ImGui.setNextItemWidth(160);
-            if (ImGui.sliderFloat("Speed##fmSpeed", sp, 0.1f, 5.0f)) {
-                speed = sp[0];
-                Config.setProperty(baseConfig + ".speed", String.valueOf(speed));
-            }
-            normalsBeforeCheat = slider("Normals Before Cheat##fmNorm", normalsBeforeCheat, 0, 20, ".normalsBeforeCheat");
-            doubleStop = boolRow("Double Stop##fmDoubleStop", doubleStop, ".doubleStop");
-            if (doubleStop)
-                doubleStopEvery = slider("Double Stop Every##fmDoubleEvery", doubleStopEvery, 1, 20, ".doubleStopEvery");
-            waitForBreak = boolRow("Wait For Break##fmWait", waitForBreak, ".waitForBreak");
-            if (waitForBreak) retryTicks = slider("Retry Ticks##fmRetry", retryTicks, 1, 40, ".retryTicks");
+            speed.render();
+            normalsBeforeCheat.render();
+            doubleStop.render();
+            if (doubleStop.get()) doubleStopEvery.render();
+            waitForBreak.render();
+            if (waitForBreak.get()) retryTicks.render();
         } else {
             ImGui.separatorText("Reversed / Normal");
             int timing = combo("Timing##fmTiming", timingMode.ordinal(), TIMING_LABELS, ".timing");
             timingMode = TimingMode.values()[timing];
-            abortAfter = boolRow("Abort After##fmAbortAfter", abortAfter, ".abortAfter");
+            abortAfter.render();
         }
 
         ImGui.end();
     }
 
-    private boolean boolRow(String id, boolean value, String key) {
-        if (ImGui.checkbox(id, value)) {
-            value = !value;
-            Config.setProperty(baseConfig + key, String.valueOf(value));
-        }
-        return value;
-    }
-
-    private int slider(String id, int value, int min, int max, String key) {
-        int[] v = {value};
-        ImGui.setNextItemWidth(160);
-        if (ImGui.sliderInt(id, v, min, max)) {
-            value = v[0];
-            Config.setProperty(baseConfig + key, String.valueOf(value));
-        }
-        return value;
-    }
 
     private int combo(String id, int current, String[] labels, String key) {
         ImInt sel = new ImInt(current);

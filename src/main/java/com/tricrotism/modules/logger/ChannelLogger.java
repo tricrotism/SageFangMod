@@ -1,13 +1,13 @@
 package com.tricrotism.modules.logger;
 
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 
@@ -27,9 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Channel names come from inbound payload ids in {@code ConnectionMixin}; the bodies come from
  * {@code DiscardedPayloadMixin}, which grabs them before vanilla discards them.
  */
-public final class ChannelLogger extends Module implements Menu {
+public final class ChannelLogger extends Module {
 
     public static final ChannelLogger instance = new ChannelLogger();
+
+    private final Settings.Bool showHex =
+        bool("Hex##clHex", "showHex", "Show the hex dump in the detail pane", true);
 
     private static final int MAX_PREVIEW_BYTES = 256;
 
@@ -41,20 +44,20 @@ public final class ChannelLogger extends Module implements Menu {
 
     private final Map<String, ChannelInfo> channels = new ConcurrentHashMap<>();
     private String selected;
-    private boolean showHex;
 
     private ChannelLogger() {
-        super("channellogger", "Channel Logger", "Log plugin-message channels and decode their contents.", "Logger");
-        showHex = Config.getBool(baseConfig + ".showHex", true);
+        super("channellogger", "Channel Logger", "Log plugin-message channels and decode their contents.", Category.LOGGING);
     }
 
     /**
-     * Called from ConnectionMixin — records that a channel exists even if we never see its body.
+     * Called from ConnectionMixin. Records that a channel exists even if we never see its body.
      */
     public void onInbound(Packet<?> packet) {
         if (!isActive()) return;
-        if (packet instanceof ClientboundCustomPayloadPacket p) {
-            channels.computeIfAbsent(p.payload().type().id().toString(),
+        if (packet instanceof ClientboundCustomPayloadPacket(
+            net.minecraft.network.protocol.common.custom.CustomPacketPayload payload
+        )) {
+            channels.computeIfAbsent(payload.type().id().toString(),
                 k -> new ChannelInfo(new AtomicInteger(), "(no body captured)", "", "", 0));
         }
     }
@@ -144,10 +147,7 @@ public final class ChannelLogger extends Module implements Menu {
 
         if (ImGui.checkbox("Enabled##channelLoggerEnabled", isActive())) toggle();
         ImGui.sameLine();
-        if (ImGui.checkbox("Hex##clHex", showHex)) {
-            showHex = !showHex;
-            Config.setProperty(baseConfig + ".showHex", String.valueOf(showHex));
-        }
+        if (ImGui.checkbox("Hex##clHex", showHex.get())) showHex.set(!showHex.get());
         ImGui.sameLine();
         if (ImGui.button("Clear##clClear")) {
             channels.clear();
@@ -181,7 +181,7 @@ public final class ChannelLogger extends Module implements Menu {
                 ImGui.separator();
                 ImGui.textDisabled("ASCII (" + info.lastSize() + " bytes)");
                 ImGui.textWrapped(info.lastAscii());
-                if (showHex) {
+                if (showHex.get()) {
                     ImGui.separator();
                     ImGui.textDisabled("Hex");
                     ImGui.textWrapped(info.lastHex());

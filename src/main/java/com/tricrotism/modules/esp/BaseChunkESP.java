@@ -1,18 +1,16 @@
 package com.tricrotism.modules.esp;
 
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.utils.EspRenderUtils;
 import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
@@ -20,61 +18,60 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * Finds "old"/base chunks by counting player-activity blocks — cobbled deepslate
+ * Finds "old"/base chunks by counting player-activity blocks: cobbled deepslate
  * (never generated naturally), horizontally-rotated deepslate (player-placed),
- * end stone in the overworld, and anomalous amounts of deepslate — and flagging
- * any chunk that exceeds a per-type threshold, drawn as a column. Ported and
+ * end stone in the overworld, and anomalous amounts of deepslate. Any chunk that
+ * exceeds a per-type threshold is flagged and drawn as a column. Ported and
  * streamlined from the Meteor addon's chunk-finder (multithreading, notifications,
  * trial-chamber logic and per-block highlighting dropped).
  */
-public final class BaseChunkESP extends Module implements Menu {
+public final class BaseChunkESP extends Module {
 
     public static final BaseChunkESP instance = new BaseChunkESP();
+
+    private final Settings.Bool detectDeepslate =
+        bool("Deepslate", "detectDeepslate", "Flag chunks by deepslate count", false);
+    private final Settings.Int deepslateThreshold =
+        integer("Deepslate >=", "deepslateThreshold", "Blocks needed to flag", 200, 1, 2000);
+    private final Settings.Bool detectCobbled =
+        bool("Cobbled Deepslate", "detectCobbled", "Flag chunks by cobbled deepslate", true);
+    private final Settings.Int cobbledThreshold =
+        integer("Cobbled >=", "cobbledThreshold", "Blocks needed to flag", 1, 1, 64);
+    private final Settings.Bool detectRotated =
+        bool("Rotated Deepslate", "detectRotated", "Flag chunks by player-placed deepslate", true);
+    private final Settings.Int rotatedThreshold =
+        integer("Rotated >=", "rotatedThreshold", "Blocks needed to flag", 1, 1, 64);
+    private final Settings.Bool detectEndStone =
+        bool("End Stone", "detectEndStone", "Flag chunks by end stone", true);
+    private final Settings.Int endStoneThreshold =
+        integer("End Stone >=", "endStoneThreshold", "Blocks needed to flag", 1, 1, 64);
+    private final Settings.Int chunkRadius =
+        integer("Chunk Radius", "chunkRadius", "Chunk radius to scan", 12, 2, 24);
+    private final Settings.Int scanInterval =
+        integer("Scan Interval", "scanInterval", "Ticks between rescans", 40, 10, 200);
 
     private static final Predicate<BlockState> TARGETS = s ->
         s.is(Blocks.DEEPSLATE) || s.is(Blocks.COBBLED_DEEPSLATE) || s.is(Blocks.END_STONE);
 
-    private boolean detectDeepslate;
-    private int deepslateThreshold;
-    private boolean detectCobbled;
-    private int cobbledThreshold;
-    private boolean detectRotated;
-    private int rotatedThreshold;
-    private boolean detectEndStone;
-    private int endStoneThreshold;
-    private int chunkRadius;
-    private int scanInterval;
 
     private int scanCounter;
     private volatile List<Long> flagged = List.of();
 
     private BaseChunkESP() {
-        super("chunkfinder", "Chunk Finder", "Flag old/base chunks by deepslate/cobbled/end-stone counts.", "ESP");
-        detectDeepslate = Config.getBool(baseConfig + ".detectDeepslate", false);
-        deepslateThreshold = Config.getInt(baseConfig + ".deepslateThreshold", 200);
-        detectCobbled = Config.getBool(baseConfig + ".detectCobbled", true);
-        cobbledThreshold = Config.getInt(baseConfig + ".cobbledThreshold", 1);
-        detectRotated = Config.getBool(baseConfig + ".detectRotated", true);
-        rotatedThreshold = Config.getInt(baseConfig + ".rotatedThreshold", 1);
-        detectEndStone = Config.getBool(baseConfig + ".detectEndStone", true);
-        endStoneThreshold = Config.getInt(baseConfig + ".endStoneThreshold", 1);
-        chunkRadius = Config.getInt(baseConfig + ".chunkRadius", 12);
-        scanInterval = Config.getInt(baseConfig + ".scanInterval", 40);
-        LevelRenderEvents.BEFORE_GIZMOS.register(this::render);
+        super("chunkfinder", "Chunk Finder", "Flag old/base chunks by deepslate/cobbled/end-stone counts.", Category.RENDER);
+        LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(this::render);
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (!isActive()) return;
-        if (++scanCounter < scanInterval) return;
+        if (++scanCounter < scanInterval.get()) return;
         scanCounter = 0;
         scan();
     }
@@ -90,8 +87,8 @@ public final class BaseChunkESP extends Module implements Menu {
         ChunkPos pc = mc.player.chunkPosition();
         List<Long> found = new ArrayList<>();
 
-        for (int cx = pc.x() - chunkRadius; cx <= pc.x() + chunkRadius; cx++) {
-            for (int cz = pc.z() - chunkRadius; cz <= pc.z() + chunkRadius; cz++) {
+        for (int cx = pc.x() - chunkRadius.get(); cx <= pc.x() + chunkRadius.get(); cx++) {
+            for (int cz = pc.z() - chunkRadius.get(); cz <= pc.z() + chunkRadius.get(); cz++) {
                 if (!mc.level.hasChunk(cx, cz)) continue;
                 if (isFlagged(mc.level.getChunk(cx, cz))) found.add(ChunkPos.pack(cx, cz));
             }
@@ -129,10 +126,10 @@ public final class BaseChunkESP extends Module implements Menu {
     }
 
     private boolean flagged(int deepslate, int cobbled, int rotated, int endStone) {
-        return (detectDeepslate && deepslate >= deepslateThreshold)
-            || (detectCobbled && cobbled >= cobbledThreshold)
-            || (detectRotated && rotated >= rotatedThreshold)
-            || (detectEndStone && endStone >= endStoneThreshold);
+        return (detectDeepslate.get() && deepslate >= deepslateThreshold.get())
+            || (detectCobbled.get() && cobbled >= cobbledThreshold.get())
+            || (detectRotated.get() && rotated >= rotatedThreshold.get())
+            || (detectEndStone.get() && endStone >= endStoneThreshold.get());
     }
 
     private void render(LevelRenderContext context) {
@@ -145,67 +142,17 @@ public final class BaseChunkESP extends Module implements Menu {
         double y0 = mc.level.getMinY();
         double y1 = mc.level.getMinY() + mc.level.getHeight();
 
-        var consumers = context.bufferSource();
-        if (consumers == null) return;
-
-        var matrices = context.poseStack();
-        Vec3 camera = context.levelState().cameraRenderState.pos;
-        matrices.pushPose();
-        matrices.translate(-camera.x, -camera.y, -camera.z);
-        Matrix4f pose = matrices.last().pose();
-        var lines = consumers.getBuffer(RenderTypes.lines());
-
-        for (long key : snapshot) {
-            double x0 = ChunkPos.getX(key) << 4;
-            double z0 = ChunkPos.getZ(key) << 4;
-            EspRenderUtils.drawBox(pose, lines, x0, y0, z0, x0 + 16, y1, z0 + 16, 1f, 0.55f, 0.1f, 0.7f, 2.0f);
-        }
-
-        matrices.popPose();
+        EspRenderUtils.submitBoxes(context, sink -> {
+            for (long key : snapshot) {
+                double x0 = ChunkPos.getX(key) << 4;
+                double z0 = ChunkPos.getZ(key) << 4;
+                sink.box(x0, y0, z0, x0 + 16, y1, z0 + 16, 1f, 0.55f, 0.1f, 0.7f, 2.0f);
+            }
+        });
     }
 
     @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.AlwaysAutoResize);
-        if (ImGui.checkbox("Enabled##chunkFinderEnabled", isActive())) toggle();
-        ImGui.separatorText("Detect");
-        detectDeepslate = boolRow("Deepslate##cfDeep", detectDeepslate, ".detectDeepslate");
-        if (detectDeepslate)
-            deepslateThreshold = slider("  Deepslate >=##cfDeepT", deepslateThreshold, 1, 2000, ".deepslateThreshold");
-        detectCobbled = boolRow("Cobbled Deepslate##cfCob", detectCobbled, ".detectCobbled");
-        if (detectCobbled)
-            cobbledThreshold = slider("  Cobbled >=##cfCobT", cobbledThreshold, 1, 64, ".cobbledThreshold");
-        detectRotated = boolRow("Rotated Deepslate##cfRot", detectRotated, ".detectRotated");
-        if (detectRotated)
-            rotatedThreshold = slider("  Rotated >=##cfRotT", rotatedThreshold, 1, 64, ".rotatedThreshold");
-        detectEndStone = boolRow("End Stone##cfEnd", detectEndStone, ".detectEndStone");
-        if (detectEndStone)
-            endStoneThreshold = slider("  End Stone >=##cfEndT", endStoneThreshold, 1, 64, ".endStoneThreshold");
-        ImGui.separator();
-        chunkRadius = slider("Chunk Radius##cfRadius", chunkRadius, 2, 24, ".chunkRadius");
-        scanInterval = slider("Scan Interval##cfScan", scanInterval, 10, 200, ".scanInterval");
+    protected void renderExtra(ImGuiIO io) {
         ImGui.text("Flagged: " + flagged.size());
-        ImGui.end();
-    }
-
-    private boolean boolRow(String id, boolean value, String key) {
-        if (ImGui.checkbox(id, value)) {
-            value = !value;
-            Config.setProperty(baseConfig + key, String.valueOf(value));
-        }
-        return value;
-    }
-
-    private int slider(String id, int value, int min, int max, String key) {
-        int[] v = {value};
-        ImGui.setNextItemWidth(160);
-        if (ImGui.sliderInt(id, v, min, max)) {
-            value = v[0];
-            Config.setProperty(baseConfig + key, String.valueOf(value));
-        }
-        return value;
     }
 }

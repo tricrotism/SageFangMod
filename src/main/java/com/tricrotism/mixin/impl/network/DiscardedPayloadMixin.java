@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Captures the raw body of unknown plugin-message payloads for {@link ChannelLogger}.
  * <p>
  * In 26.1 an unrecognised custom payload decodes to a {@link DiscardedPayload}, which keeps only
- * the channel id — the decoder {@code skipBytes} the body, so by the time the packet reaches
+ * the channel id. The decoder {@code skipBytes} the body, so by the time the packet reaches
  * {@code Connection.channelRead0} the content is gone. This decoder lambda is the last point the
  * bytes are readable.
  * <p>

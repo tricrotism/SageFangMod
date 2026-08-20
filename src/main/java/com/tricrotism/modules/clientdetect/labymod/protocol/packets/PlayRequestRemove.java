@@ -4,7 +4,7 @@ import com.tricrotism.modules.clientdetect.labymod.protocol.Packet;
 import com.tricrotism.modules.clientdetect.labymod.protocol.PacketBuffer;
 
 /**
- * Serverbound (ID 18): cancel an outgoing friend request by name — the inverse
+ * Serverbound (ID 18): cancel an outgoing friend request by name. The inverse
  * of {@link PlayRequestAddFriend} (ID 16).
  */
 public class PlayRequestRemove extends Packet {

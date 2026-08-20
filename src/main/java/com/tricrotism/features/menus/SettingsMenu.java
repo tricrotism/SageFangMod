@@ -2,37 +2,34 @@ package com.tricrotism.features.menus;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.config.SageFangConfig;
 import com.tricrotism.modules.packets.UIPacketDelay;
 import imgui.ImGui;
 import imgui.ImGuiIO;
+import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Central settings panel. Modules are discovered from {@link Module#getRegistry()}
- * and grouped by {@link Module#category} automatically — no hardcoded references.
+ * and grouped by {@link Module#category} automatically, with no hardcoded references.
  * <p>
  * Toggle visibility with Right-Control.
  */
 public class SettingsMenu implements Menu {
 
     private static final int TOGGLE_KEY = GLFW.GLFW_KEY_RIGHT_CONTROL;
-    private static final List<String> CATEGORY_ORDER = List.of(
-        "Visual", "ESP", "Chat", "Combat", "Network", "World", "Utility", "Exploit", "Logger"
-    );
-
     private boolean visible = true;
     private boolean keyWasDown;
 
-    private Map<String, List<Module>> categoryCache;
+    private final Map<String, Boolean> sectionOpen = new HashMap<>();
+
+    private Map<Category, List<Module>> categoryCache;
     private int cachedModuleCount = -1;
 
     @Override
@@ -46,7 +43,7 @@ public class SettingsMenu implements Menu {
 
         try {
             int flags = ImGuiWindowFlags.AlwaysAutoResize;
-            if (Minecraft.getInstance().screen == null) {
+            if (Minecraft.getInstance().gui.screen() == null) {
                 flags |= ImGuiWindowFlags.NoInputs;
             }
 
@@ -67,8 +64,31 @@ public class SettingsMenu implements Menu {
         }
     }
 
+
+    /**
+     * A collapsible section header whose open/closed state survives a restart. ImGui owns the state
+     * once the window exists, so config only seeds the first frame and is written back on change.
+     * Reading it every frame would put a config lookup per section in the render path.
+     */
+    private boolean section(String label, String key, boolean defaultOpen) {
+        String configKey = "menu.settings.section." + key;
+        Boolean cached = sectionOpen.get(key);
+        boolean wasOpen = cached != null ? cached : io.avaje.config.Config.getBool(configKey, defaultOpen);
+        if (cached == null) {
+            sectionOpen.put(key, wasOpen);
+            ImGui.setNextItemOpen(wasOpen, ImGuiCond.Always);
+        }
+
+        boolean open = ImGui.collapsingHeader(label + "##section_" + key);
+        if (open != wasOpen) {
+            sectionOpen.put(key, open);
+            io.avaje.config.Config.setProperty(configKey, String.valueOf(open));
+        }
+        return open;
+    }
+
     private void renderMenusSection() {
-        ImGui.separatorText("Menus");
+        if (!section("Menus", "menus", true)) return;
 
         if (ImGui.checkbox("Server Info##serverInfo", SageFangConfig.isServerInfoMenuEnabled())) {
             SageFangConfig.setServerInfoMenuEnabled(!SageFangConfig.isServerInfoMenuEnabled());
@@ -88,13 +108,20 @@ public class SettingsMenu implements Menu {
     }
 
     private void renderDisplaySection() {
-        ImGui.separatorText("Display");
+        if (!section("Display", "display", true)) return;
 
         if (ImGui.checkbox("Merged Info##mergedInfo", SageFangConfig.isMergedInfoMenu())) {
             SageFangConfig.setMergedInfoMenu(!SageFangConfig.isMergedInfoMenu());
         }
         if (ImGui.isItemHovered()) {
             ImGui.setTooltip("Combine server and player info into one window");
+        }
+
+        if (ImGui.checkbox("Filled ESP##espFilled", SageFangConfig.isEspFilled())) {
+            SageFangConfig.setEspFilled(!SageFangConfig.isEspFilled());
+        }
+        if (ImGui.isItemHovered()) {
+            ImGui.setTooltip("Shade ESP boxes translucently and darken their outlines");
         }
 
         if (ImGui.checkbox("Show Graphs##showGraphs", SageFangConfig.isShowGraphs())) {
@@ -146,7 +173,7 @@ public class SettingsMenu implements Menu {
     }
 
     private void renderMiscSection() {
-        ImGui.separatorText("Misc");
+        if (!section("Misc", "misc", true)) return;
 
         if (ImGui.checkbox("Bypass Server Pack##bypassResourcePack", SageFangConfig.isBypassResourcePack())) {
             SageFangConfig.setBypassResourcePack(!SageFangConfig.isBypassResourcePack());
@@ -197,10 +224,10 @@ public class SettingsMenu implements Menu {
     private void renderModulesSection() {
         List<Module> registry = Module.getRegistry();
         if (categoryCache == null || registry.size() != cachedModuleCount) {
-            Map<String, List<Module>> byCategory = new LinkedHashMap<>();
-            for (String cat : CATEGORY_ORDER) byCategory.put(cat, new ArrayList<>());
+            Map<Category, List<Module>> byCategory = new LinkedHashMap<>();
+            for (Category cat : Category.values()) byCategory.put(cat, new ArrayList<>());
             for (Module m : registry) {
-                byCategory.computeIfAbsent(m.category, k -> new ArrayList<>()).add(m);
+                byCategory.get(m.category).add(m);
             }
             categoryCache = byCategory;
             cachedModuleCount = registry.size();
@@ -210,7 +237,11 @@ public class SettingsMenu implements Menu {
             List<Module> modules = entry.getValue();
             if (modules.isEmpty()) continue;
 
-            ImGui.separatorText(entry.getKey());
+            Category cat = entry.getKey();
+            String header = cat.displayName() + " (" + modules.size() + ")";
+            boolean open = section(header, "cat." + cat.name(), true);
+            if (ImGui.isItemHovered()) ImGui.setTooltip(cat.description());
+            if (!open) continue;
             for (Module m : modules) {
                 if (ImGui.checkbox(m.title + "##" + m.id, m.isVisible())) {
                     m.toggleVisible();

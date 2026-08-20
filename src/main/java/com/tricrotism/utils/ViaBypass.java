@@ -10,7 +10,7 @@ import java.util.Locale;
 
 /**
  * Sends already-encoded <em>server</em>-protocol play packets (e.g. 1.21.4 ItemStack clicks)
- * without letting Via re-parse them as modern hashed client packets. Entirely reflective — no
+ * without letting Via re-parse them as modern hashed client packets. Entirely reflective, with no
  * compile-time dependency on ViaFabricPlus/ViaVersion; every probe fails safe when Via is absent.
  */
 public final class ViaBypass {

@@ -20,7 +20,7 @@ public class InBedChatScreenMixin {
         if (SageFangConfig.isShouldForceWakeUp()) {
             if (mc.player != null && mc.player.isSleeping()) {
                 mc.player.stopSleeping();
-                mc.setScreen(null);
+                mc.gui.setScreen(null);
                 SageFangConfig.setShouldForceWakeUp(false);
             }
         }

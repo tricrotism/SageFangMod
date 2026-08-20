@@ -1,11 +1,10 @@
 package com.tricrotism.modules.misc;
 
 import com.tricrotism.SageFang;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -17,12 +16,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Holds back all inbound (server-to-client) packets while active, then replays
- * them in order on disable — the inbound counterpart to Blink. Capture happens in
+ * them in order on disable. The inbound counterpart to Blink. Capture happens in
  * {@code ConnectionMixin}'s inbound hook; replay re-handles each packet on the
  * client thread. Ported from the Meteor addon's ClientBoundPacketDelayer (the
- * per-type packet picker is dropped — it delays everything while on).
+ * per-type packet picker is dropped, so it delays everything while on).
  */
-public final class S2CPacketDelayer extends Module implements Menu {
+public final class S2CPacketDelayer extends Module {
 
     public static final S2CPacketDelayer instance = new S2CPacketDelayer();
 
@@ -30,7 +29,7 @@ public final class S2CPacketDelayer extends Module implements Menu {
     private volatile boolean flushing;
 
     private S2CPacketDelayer() {
-        super("s2cpacketdelayer", "S2C Packet Delayer", "Delay incoming packets, replay them on disable.", "Network");
+        super("s2cpacketdelayer", "S2C Packet Delayer", "Delay incoming packets, replay them on disable.", Category.NETWORK);
     }
 
     /**
@@ -74,13 +73,7 @@ public final class S2CPacketDelayer extends Module implements Menu {
     }
 
     @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.AlwaysAutoResize);
-        if (ImGui.checkbox("Enabled##s2cDelayerEnabled", isActive())) toggle();
+    protected void renderExtra(ImGuiIO io) {
         ImGui.text("Queued: " + queue.size());
-        ImGui.end();
     }
 }

@@ -2,16 +2,15 @@ package com.tricrotism.modules.crash;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.mixin.accessors.ConnectionAccessor;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImInt;
-import io.avaje.config.Config;
 import io.netty.channel.Channel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -24,17 +23,24 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Generic packet flooding module — sends configurable packet types at high
+ * Generic packet flooding module. Sends configurable packet types at high
  * throughput to trigger or test LPX FLOOD_B rate-limit detections.
  */
-public class PacketFlood extends Module implements Menu {
-
-    public static final PacketFlood instance = new PacketFlood();
+public class PacketFlood extends Module {
 
     private static final String[] TYPE_LABELS = {
         "Animation", "Use Item", "Block Place", "Interact",
         "Position", "Digging", "Tab Complete", "Sign"
     };
+    public static final PacketFlood instance = new PacketFlood();
+
+    private final Settings.Mode type =
+        mode("Flood Type", "type", "Which packet type to flood", 0, TYPE_LABELS);
+    private final Settings.Int speed =
+        integer("Packets/tick", "speed", "Packets per tick", 200, 1, 5000);
+    private final Settings.Bool useRawChannel =
+        bool("Use Raw Channel", "useRawChannel", "Write straight to the netty channel", true);
+
 
     private static final String[] LPX_LIMITS = {
         "LPX limit: 50 / 500ms",
@@ -74,31 +80,7 @@ public class PacketFlood extends Module implements Menu {
         new ServerboundSignUpdatePacket(BlockPos.ZERO, true, "", "", "", "");
 
     public PacketFlood() {
-        super("packetflood", "Packet Flood", "Flood configurable packet types to trigger LPX FLOOD_B rate limits.", "Combat");
-    }
-
-    private int type() {
-        return Config.getInt(baseConfig + ".type", 0);
-    }
-
-    private void setType(int v) {
-        Config.setProperty(baseConfig + ".type", String.valueOf(v));
-    }
-
-    private int speed() {
-        return Config.getInt(baseConfig + ".speed", 200);
-    }
-
-    private void setSpeed(int v) {
-        Config.setProperty(baseConfig + ".speed", String.valueOf(v));
-    }
-
-    private boolean useRawChannel() {
-        return Config.getBool(baseConfig + ".useRawChannel", true);
-    }
-
-    private void setUseRawChannel(boolean v) {
-        Config.setProperty(baseConfig + ".useRawChannel", String.valueOf(v));
+        super("packetflood", "Packet Flood", "Flood configurable packet types to trigger LPX FLOOD_B rate limits.", Category.COMBAT);
     }
 
     /**
@@ -107,7 +89,7 @@ public class PacketFlood extends Module implements Menu {
      * each tick to reflect the player's current coordinates.
      */
     private Packet<?> resolvePacket(Minecraft mc) {
-        return switch (type()) {
+        return switch (type.get()) {
             case 0 -> SWING;             // Animation
             case 1 -> USE_ITEM;          // Use Item
             case 2 -> BLOCK_PLACE;       // Block Place
@@ -132,9 +114,9 @@ public class PacketFlood extends Module implements Menu {
         if (mc.player == null || mc.getConnection() == null) return;
 
         Packet<?> packet = resolvePacket(mc);
-        int count = speed();
+        int count = speed.get();
 
-        if (useRawChannel()) {
+        if (useRawChannel.get()) {
             Connection connection = mc.getConnection().getConnection();
             Channel channel = ((ConnectionAccessor) connection).sagefang$getChannel();
             if (channel == null || !channel.isOpen()) return;
@@ -171,19 +153,16 @@ public class PacketFlood extends Module implements Menu {
             }
             ImGui.separator();
 
-            ImInt typeInt = new ImInt(type());
-            if (ImGui.combo("Flood Type##pfType", typeInt, TYPE_LABELS)) {
-                setType(typeInt.get());
-            }
+            type.render();
 
-            int[] speedArr = {speed()};
+            int[] speedArr = {speed.get()};
             if (ImGui.sliderInt("Packets/tick##pfSpeed", speedArr, 1, 5000)) {
-                setSpeed(speedArr[0]);
+                speed.set(speedArr[0]);
             }
 
-            boolean raw = useRawChannel();
+            boolean raw = useRawChannel.get();
             if (ImGui.checkbox("Use Raw Channel##pfRaw", raw)) {
-                setUseRawChannel(!raw);
+                useRawChannel.set(!raw);
             }
             if (ImGui.isItemHovered()) {
                 ImGui.setTooltip("Bypass normal send pipeline via Netty channel");
@@ -191,7 +170,7 @@ public class PacketFlood extends Module implements Menu {
 
             ImGui.separator();
 
-            int currentType = type();
+            int currentType = type.get();
             if (currentType >= 0 && currentType < LPX_LIMITS.length) {
                 ImGui.textDisabled(LPX_LIMITS[currentType]);
             }

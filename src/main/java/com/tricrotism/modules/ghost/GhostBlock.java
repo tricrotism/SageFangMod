@@ -2,16 +2,15 @@ package com.tricrotism.modules.ghost;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.utils.KeybindUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImString;
-import io.avaje.config.Config;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -28,10 +27,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Ghost Blocks — place and break blocks client-side only.
+ * Ghost Blocks: place and break blocks client-side only.
  * The server never sees these changes.
  */
-public class GhostBlock extends Module implements Menu {
+public class GhostBlock extends Module {
 
     public static final GhostBlock instance = new GhostBlock();
 
@@ -40,25 +39,23 @@ public class GhostBlock extends Module implements Menu {
     private final Deque<GhostOp> history = new ArrayDeque<>();
     private final Set<BlockPos> ghostPositions = new HashSet<>();
 
-    private final ImString blockBuffer = new ImString(256);
+    private final Settings.Text blockId = text("Block", "block", "Block id to place", "minecraft:stone", 256);
+    private final Settings.Key placeKey = key("Place", "keybindPlace", "Place a ghost block", GLFW.GLFW_KEY_RIGHT_BRACKET);
+    private final Settings.Key breakKey = key("Break", "keybindBreak", "Break a ghost block", GLFW.GLFW_KEY_LEFT_BRACKET);
+    private final Settings.Key undoKey = key("Undo", "keybindUndo", "Undo the last op", GLFW.GLFW_KEY_BACKSLASH);
 
     private boolean placeWasDown;
     private boolean breakWasDown;
     private boolean undoWasDown;
 
-    private enum RebindTarget {NONE, PLACE, BREAK, UNDO}
-
-    private RebindTarget awaitingRebind = RebindTarget.NONE;
-
     public GhostBlock() {
-        super("ghostblock", "Ghost Blocks", "Place and break blocks client-side only.", "World");
-        blockBuffer.set(Config.get(baseConfig + ".block", "minecraft:stone"));
+        super("ghostblock", "Ghost Blocks", "Place and break blocks client-side only.", Category.WORLD);
     }
 
     private BlockState getSelectedBlock() {
-        String blockId = Config.get(baseConfig + ".block", "minecraft:stone");
+        String id = this.blockId.get();
         try {
-            Identifier rl = Identifier.parse(blockId);
+            Identifier rl = Identifier.parse(id);
             var ref = BuiltInRegistries.BLOCK.get(rl);
             if (ref.isPresent()) {
                 Block block = ref.get().value();
@@ -67,33 +64,9 @@ public class GhostBlock extends Module implements Menu {
                 }
             }
         } catch (Exception e) {
-            SageFang.LOGGER.warn("[GhostBlock] Invalid block ID '{}', falling back to stone", blockId);
+            SageFang.LOGGER.warn("[GhostBlock] Invalid block ID '{}', falling back to stone", id);
         }
         return Blocks.STONE.defaultBlockState();
-    }
-
-    private int getPlaceKeybind() {
-        return Config.getInt(baseConfig + ".keybindPlace", GLFW.GLFW_KEY_RIGHT_BRACKET);
-    }
-
-    private void setPlaceKeybind(int key) {
-        Config.setProperty(baseConfig + ".keybindPlace", String.valueOf(key));
-    }
-
-    private int getBreakKeybind() {
-        return Config.getInt(baseConfig + ".keybindBreak", GLFW.GLFW_KEY_LEFT_BRACKET);
-    }
-
-    private void setBreakKeybind(int key) {
-        Config.setProperty(baseConfig + ".keybindBreak", String.valueOf(key));
-    }
-
-    private int getUndoKeybind() {
-        return Config.getInt(baseConfig + ".keybindUndo", GLFW.GLFW_KEY_BACKSLASH);
-    }
-
-    private void setUndoKeybind(int key) {
-        Config.setProperty(baseConfig + ".keybindUndo", String.valueOf(key));
     }
 
     private void ghostPlace() {
@@ -150,21 +123,21 @@ public class GhostBlock extends Module implements Menu {
     private void onTick(TickEvent.Post event) {
         if (!isActive()) return;
 
-        int placeKey = getPlaceKeybind();
+        int placeKey = this.placeKey.get();
         {
             boolean down = KeybindUtil.isKeyDown(placeKey);
             if (down && !placeWasDown) ghostPlace();
             placeWasDown = down;
         }
 
-        int breakKey = getBreakKeybind();
+        int breakKey = this.breakKey.get();
         {
             boolean down = KeybindUtil.isKeyDown(breakKey);
             if (down && !breakWasDown) ghostBreak();
             breakWasDown = down;
         }
 
-        int undoKey = getUndoKeybind();
+        int undoKey = this.undoKey.get();
         {
             boolean down = KeybindUtil.isKeyDown(undoKey);
             if (down && !undoWasDown) undo();
@@ -200,14 +173,7 @@ public class GhostBlock extends Module implements Menu {
             ImGui.text("Undo history: " + history.size());
 
             ImGui.separatorText("Block");
-            ImGui.inputText("##ghostBlockId", blockBuffer);
-            ImGui.sameLine();
-            if (ImGui.button("Apply##ghostApply")) {
-                String val = blockBuffer.get().trim();
-                if (!val.isEmpty()) {
-                    Config.setProperty(baseConfig + ".block", val);
-                }
-            }
+            blockId.render();
 
             ImGui.separatorText("Actions");
             if (ImGui.button("Undo Last##ghostUndo")) {
@@ -220,13 +186,9 @@ public class GhostBlock extends Module implements Menu {
 
             ImGui.separatorText("Keybinds");
 
-            renderKeybindButton("Place", RebindTarget.PLACE, getPlaceKeybind());
-            renderKeybindButton("Break", RebindTarget.BREAK, getBreakKeybind());
-            renderKeybindButton("Undo", RebindTarget.UNDO, getUndoKeybind());
-
-            if (awaitingRebind != RebindTarget.NONE) {
-                scanForKeybind();
-            }
+            placeKey.render();
+            breakKey.render();
+            undoKey.render();
 
             ImGui.end();
         } catch (Exception e) {
@@ -234,35 +196,5 @@ public class GhostBlock extends Module implements Menu {
         }
     }
 
-    private void renderKeybindButton(String label, RebindTarget target, int currentKey) {
-        String btnLabel = (awaitingRebind == target) ? "Press a key..." : KeybindUtil.keyName(currentKey);
-        if (ImGui.button(btnLabel + "##ghost" + label, 160, 0)) {
-            awaitingRebind = target;
-        }
-        ImGui.sameLine();
-        ImGui.text(label);
-    }
 
-    private void scanForKeybind() {
-        int result = KeybindUtil.scanForKeyPress();
-        if (result == KeybindUtil.CLEAR_BIND) {
-            switch (awaitingRebind) {
-                case PLACE -> setPlaceKeybind(GLFW.GLFW_KEY_UNKNOWN);
-                case BREAK -> setBreakKeybind(GLFW.GLFW_KEY_UNKNOWN);
-                case UNDO -> setUndoKeybind(GLFW.GLFW_KEY_UNKNOWN);
-                default -> {
-                }
-            }
-            awaitingRebind = RebindTarget.NONE;
-        } else if (result != KeybindUtil.NO_CHANGE) {
-            switch (awaitingRebind) {
-                case PLACE -> setPlaceKeybind(result);
-                case BREAK -> setBreakKeybind(result);
-                case UNDO -> setUndoKeybind(result);
-                default -> {
-                }
-            }
-            awaitingRebind = RebindTarget.NONE;
-        }
-    }
 }

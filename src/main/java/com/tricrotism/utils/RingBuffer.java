@@ -46,7 +46,7 @@ public final class RingBuffer {
     /**
      * Like {@link #toArray()} but reuses an internal scratch array, avoiding a
      * per-call allocation. The returned array is only valid until the next call
-     * and must not be retained — intended for the per-frame render hot path.
+     * and must not be retained. Intended for the per-frame render hot path.
      */
     public float[] toArrayShared() {
         if (scratch == null || scratch.length != count) scratch = new float[count];

@@ -5,8 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.tricrotism.SageFang;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.features.commands.SFCommand;
 import com.tricrotism.utils.MessageUtils;
 import com.tricrotism.utils.ScheduledTaskRunner;
@@ -33,9 +34,11 @@ import java.util.regex.Pattern;
 import static org.incendo.cloud.parser.standard.StringParser.greedyStringParser;
 import static org.incendo.cloud.parser.standard.StringParser.stringParser;
 
-public class ChatMacros extends Module implements Menu, SFCommand {
+public class ChatMacros extends Module implements SFCommand {
 
     public static final ChatMacros instance = new ChatMacros();
+
+    private final Settings.Int commandInterval = integer("Command Interval (ms)", "interval", "Delay between queued commands", 100, 0, 5000);
 
     private static final String CONFIG_KEY = "module.macros.list";
     private static final Gson GSON = new Gson();
@@ -46,15 +49,13 @@ public class ChatMacros extends Module implements Menu, SFCommand {
     private final ImString valueBuffer = new ImString(256);
     private final ImInt delayBuffer = new ImInt(0);
     private static final int MAX_VISIBLE_MACROS = 12;
-    private int commandInterval;
 
-    // Cached macro map — loaded once from config, written back only on mutation.
+    // Cached macro map, loaded once from config and written back only on mutation.
     // Eliminates per-frame JSON parsing that caused lag with many entries.
     private Map<String, List<String>> cachedMacros;
 
     public ChatMacros() {
-        super("macros", "Chat Macros", "Save and run chat macros.", "Chat");
-        commandInterval = Config.getInt(baseConfig + ".interval", 100);
+        super("macros", "Chat Macros", "Save and run chat macros.", Category.UTILITY);
     }
 
 
@@ -112,7 +113,9 @@ public class ChatMacros extends Module implements Menu, SFCommand {
         Config.setProperty(CONFIG_KEY, GSON.toJson(macros));
     }
 
-    /** Mutates the cached map and writes through to config. */
+    /**
+     * Mutates the cached map and writes through to config.
+     */
     private void saveMacros() {
         persistMacros(getMacros());
     }
@@ -153,7 +156,7 @@ public class ChatMacros extends Module implements Menu, SFCommand {
 
         for (int i = 0; i < values.size(); i++) {
             String msg = values.get(i);
-            long stagger = (long) i * commandInterval;
+            long stagger = (long) i * commandInterval.get();
             Matcher matcher = DELAY_PATTERN.matcher(msg);
             if (matcher.matches()) {
                 long cmdDelay = Long.parseLong(matcher.group(1));
@@ -214,11 +217,10 @@ public class ChatMacros extends Module implements Menu, SFCommand {
             }
             ImGui.separator();
 
-            int[] intervalArr = {commandInterval};
+            int[] intervalArr = {commandInterval.get()};
             ImGui.setNextItemWidth(160);
             if (ImGui.sliderInt("Command Interval (ms)##macroInterval", intervalArr, 0, 2000)) {
-                commandInterval = Math.max(0, intervalArr[0]);
-                Config.setProperty(baseConfig + ".interval", String.valueOf(commandInterval));
+                commandInterval.set(Math.max(0, intervalArr[0]));
             }
             if (ImGui.isItemHovered()) {
                 ImGui.setTooltip("Delay between each command in a macro chain.\n0 = all instant. 100 = 100ms between each.\nFor 28 commands at 100ms: ~2.7s total.");

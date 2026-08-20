@@ -1,36 +1,32 @@
 package com.tricrotism.modules.login;
 
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImString;
-import io.avaje.config.Config;
 
 import java.util.UUID;
 
 /**
- * Modifies the {@code ServerboundHelloPacket} (login start) — the name and/or
+ * Modifies the {@code ServerboundHelloPacket} (login start): the name and/or
  * profile UUID sent when joining a server. The rewrite happens in
  * {@code LoginSpoofMixin}; this module only holds the values. Leave a field
  * blank to keep the original. Ported from the Meteor addon's login-hello-spoof.
  */
-public final class LoginHelloSpoof extends Module implements Menu {
+public final class LoginHelloSpoof extends Module {
 
     public static final LoginHelloSpoof instance = new LoginHelloSpoof();
 
-    private final ImString name = new ImString(64);
-    private final ImString profileId = new ImString(48);
+    private final Settings.Text name = text("Name", "name", "Spoof name; blank keeps the original", "", 64);
+    private final Settings.Text profileId = text("Profile UUID", "profileId", "Spoof UUID; blank keeps the original", "", 48);
 
     private LoginHelloSpoof() {
-        super("loginhellospoof", "Login Hello Spoof", "Modify the name/UUID sent when joining.", "Network");
-        name.set(Config.get(baseConfig + ".name", ""));
-        profileId.set(Config.get(baseConfig + ".profileId", ""));
+        super("loginhellospoof", "Login Hello Spoof", "Modify the name/UUID sent when joining.", Category.NETWORK);
     }
 
     /**
-     * @return the spoof name, or null to keep the original.
+     * The spoof name, or null to keep the original.
      */
     public String getSpoofName() {
         String n = name.get().trim();
@@ -38,7 +34,7 @@ public final class LoginHelloSpoof extends Module implements Menu {
     }
 
     /**
-     * @return the spoof UUID, or null to keep the original (also null if unparseable).
+     * The spoof UUID, or null to keep the original (also null if unparseable).
      */
     public UUID getSpoofProfileId() {
         String id = profileId.get().trim();
@@ -51,30 +47,9 @@ public final class LoginHelloSpoof extends Module implements Menu {
     }
 
     @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.AlwaysAutoResize);
-
-        if (ImGui.checkbox("Enabled##loginHelloEnabled", isActive())) toggle();
-        ImGui.separator();
-
-        ImGui.text("Name (blank = original)");
-        ImGui.setNextItemWidth(220);
-        if (ImGui.inputText("##loginHelloName", name)) {
-            Config.setProperty(baseConfig + ".name", name.get());
-        }
-
-        ImGui.text("Profile UUID (blank = original)");
-        ImGui.setNextItemWidth(220);
-        if (ImGui.inputText("##loginHelloUuid", profileId)) {
-            Config.setProperty(baseConfig + ".profileId", profileId.get());
-        }
+    protected void renderExtra(ImGuiIO io) {
         if (!profileId.get().trim().isEmpty() && getSpoofProfileId() == null) {
-            ImGui.textColored(0.9f, 0.3f, 0.3f, 1.0f, "Invalid UUID — original will be used.");
+            ImGui.textColored(0.9f, 0.3f, 0.3f, 1.0f, "Invalid UUID, original will be used.");
         }
-
-        ImGui.end();
     }
 }

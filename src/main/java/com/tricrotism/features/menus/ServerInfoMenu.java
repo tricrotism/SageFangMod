@@ -25,7 +25,7 @@ public class ServerInfoMenu implements Menu {
             }
 
             int flags = ImGuiWindowFlags.AlwaysAutoResize;
-            if (Minecraft.getInstance().screen == null) {
+            if (Minecraft.getInstance().gui.screen() == null) {
                 flags |= ImGuiWindowFlags.NoInputs;
             }
 

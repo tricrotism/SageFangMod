@@ -1,13 +1,10 @@
 package com.tricrotism.modules.combat;
 
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.world.TickEvent;
-import imgui.ImGui;
-import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.InteractionHand;
@@ -27,14 +24,15 @@ import org.lwjgl.glfw.GLFW;
  * swaps to a totem slot and detonates a charged one. Ported from the Meteor
  * addon's anchor-macro (Meteor helper utils inlined).
  */
-public final class AnchorMacro extends Module implements Menu {
+public final class AnchorMacro extends Module {
 
     public static final AnchorMacro instance = new AnchorMacro();
 
-    private int switchDelay;
-    private int glowstoneDelay;
-    private int explodeDelay;
-    private int totemSlot;
+    private final Settings.Int switchDelay = integer("Switch Delay", "switchDelay", "Ticks before switching", 2, 0, 20);
+    private final Settings.Int glowstoneDelay = integer("Charge Delay", "glowstoneDelay", "Ticks before charging", 1, 0, 20);
+    private final Settings.Int explodeDelay = integer("Explode Delay", "explodeDelay", "Ticks before exploding", 1, 0, 20);
+    private final Settings.Int totemSlot = integer("Totem Slot", "totemSlot", "Hotbar slot to hold a totem", 9, 1, 9);
+
 
     private int switchCounter;
     private int glowstoneCounter;
@@ -43,11 +41,7 @@ public final class AnchorMacro extends Module implements Menu {
     private boolean hasExplodedAnchor;
 
     private AnchorMacro() {
-        super("anchormacro", "Anchor Macro", "Auto-charge and explode respawn anchors while holding right-click.", "Combat");
-        switchDelay = Config.getInt(baseConfig + ".switchDelay", 0);
-        glowstoneDelay = Config.getInt(baseConfig + ".glowstoneDelay", 0);
-        explodeDelay = Config.getInt(baseConfig + ".explodeDelay", 0);
-        totemSlot = Config.getInt(baseConfig + ".totemSlot", 1);
+        super("anchormacro", "Anchor Macro", "Auto-charge and explode respawn anchors while holding right-click.", Category.COMBAT);
     }
 
     @Override
@@ -72,7 +66,7 @@ public final class AnchorMacro extends Module implements Menu {
     private void onTick(TickEvent.Pre event) {
         if (!isActive()) return;
         if (mc.player == null || mc.level == null || mc.gameMode == null) return;
-        if (mc.screen != null) return;
+        if (mc.gui.screen() != null) return;
         if (isShieldOrFoodActive()) return;
 
         boolean rightHeld = GLFW.glfwGetMouseButton(mc.getWindow().handle(), GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
@@ -113,7 +107,7 @@ public final class AnchorMacro extends Module implements Menu {
 
     private void placeGlowstone(BlockHitResult hit) {
         if (mc.player.getMainHandItem().getItem() != Items.GLOWSTONE) {
-            if (switchCounter < switchDelay) {
+            if (switchCounter < switchDelay.get()) {
                 switchCounter++;
                 return;
             }
@@ -122,7 +116,7 @@ public final class AnchorMacro extends Module implements Menu {
             if (slot != -1) mc.player.getInventory().setSelectedSlot(slot);
             return;
         }
-        if (glowstoneCounter < glowstoneDelay) {
+        if (glowstoneCounter < glowstoneDelay.get()) {
             glowstoneCounter++;
             return;
         }
@@ -132,9 +126,9 @@ public final class AnchorMacro extends Module implements Menu {
     }
 
     private void explodeAnchor(BlockHitResult hit) {
-        int target = totemSlot - 1;
+        int target = totemSlot.get() - 1;
         if (mc.player.getInventory().getSelectedSlot() != target) {
-            if (switchCounter < switchDelay) {
+            if (switchCounter < switchDelay.get()) {
                 switchCounter++;
                 return;
             }
@@ -142,7 +136,7 @@ public final class AnchorMacro extends Module implements Menu {
             mc.player.getInventory().setSelectedSlot(target);
             return;
         }
-        if (explodeCounter < explodeDelay) {
+        if (explodeCounter < explodeDelay.get()) {
             explodeCounter++;
             return;
         }
@@ -163,33 +157,5 @@ public final class AnchorMacro extends Module implements Menu {
         if (result.consumesAction()) {
             mc.player.swing(InteractionHand.MAIN_HAND);
         }
-    }
-
-    @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.AlwaysAutoResize);
-
-        if (ImGui.checkbox("Enabled##anchorMacroEnabled", isActive())) toggle();
-        ImGui.separator();
-
-        switchDelay = slider("Switch Delay##amSwitch", switchDelay, 0, 20, ".switchDelay");
-        glowstoneDelay = slider("Charge Delay##amGlow", glowstoneDelay, 0, 20, ".glowstoneDelay");
-        explodeDelay = slider("Explode Delay##amExplode", explodeDelay, 0, 20, ".explodeDelay");
-        totemSlot = slider("Totem Slot##amTotem", totemSlot, 1, 9, ".totemSlot");
-
-        ImGui.end();
-    }
-
-    private int slider(String id, int value, int min, int max, String key) {
-        int[] v = {value};
-        ImGui.setNextItemWidth(160);
-        if (ImGui.sliderInt(id, v, min, max)) {
-            value = v[0];
-            Config.setProperty(baseConfig + key, String.valueOf(value));
-        }
-        return value;
     }
 }

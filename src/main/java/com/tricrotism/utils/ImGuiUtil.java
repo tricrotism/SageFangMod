@@ -10,6 +10,7 @@ import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
+import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWKeyCallback;
 
@@ -155,6 +156,16 @@ public class ImGuiUtil {
 
     public void draw(final List<Menu> menu) {
         try {
+            // ImGui's GLFW callbacks fire whether or not a screen is open, so during normal
+            // gameplay, with the cursor grabbed and the pointer hidden and drifting, clicks meant
+            // for the world were also landing on the overlay. Ignore the mouse until the cursor is free.
+            final ImGuiIO io = ImGui.getIO();
+            if (Minecraft.getInstance().mouseHandler.isMouseGrabbed()) {
+                io.addConfigFlags(ImGuiConfigFlags.NoMouse);
+            } else {
+                io.removeConfigFlags(ImGuiConfigFlags.NoMouse);
+            }
+
             imGuiGl3.newFrame();
             imGuiGlfw.newFrame();
             ImGui.newFrame();

@@ -29,4 +29,8 @@ public class MenuRegistrationEvent {
     public void registerAll(Menu... menu) {
         menus.addAll(Arrays.asList(menu));
     }
+
+    public void registerAll(List<Menu> menu) {
+        menus.addAll(menu);
+    }
 }

@@ -3,7 +3,7 @@ package com.tricrotism.modules.items;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.tricrotism.SageFang;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -29,7 +29,7 @@ import java.util.Map;
  * <p>
  * TODO: Redo, it's fucking dogshit atm
  */
-public class ItemViewer extends Module implements Menu {
+public class ItemViewer extends Module {
 
     public static final ItemViewer instance = new ItemViewer();
 
@@ -49,7 +49,7 @@ public class ItemViewer extends Module implements Menu {
     private final Map<String, String> errors = new HashMap<>();
 
     public ItemViewer() {
-        super("itemviewer", "Item Viewer", "View and edit item data components.", "Utility");
+        super("itemviewer", "Item Viewer", "View and edit item data components.", Category.UTILITY);
     }
 
     @Override
@@ -158,7 +158,7 @@ public class ItemViewer extends Module implements Menu {
             }
         } else {
             ImGui.pushStyleColor(ImGuiCol.Text, 0.6f, 0.6f, 0.6f, 1.0f);
-            ImGui.text("(not editable — transient component)");
+            ImGui.text("(not editable, transient component)");
             ImGui.popStyleColor();
         }
 

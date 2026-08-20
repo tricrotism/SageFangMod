@@ -2,25 +2,29 @@ package com.tricrotism.modules.freecam;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.utils.KeybindUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
 import lombok.Getter;
 import net.minecraft.client.CameraType;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Freecam — detaches the render camera from the player and flies it with
+ * Freecam detaches the render camera from the player and flies it with
  * WASD/space/shift + mouse, while the player body stays frozen in place both
  * client-side and server-side.
+ * <p>
+ * The camera detaches as soon as the module is active (menu checkbox or keybind).
  * <p>
  * Camera position/rotation are applied by {@code FreecamCameraMixin} (reading
  * {@link #getCameraPos()} / {@link #getCameraYaw()} / {@link #getCameraPitch()});
@@ -29,14 +33,28 @@ import org.lwjgl.glfw.GLFW;
  * suppressed by {@code ConnectionMixin} while {@link #isEngaged()} so the server
  * keeps you at the detach point.
  */
-public final class Freecam extends Module implements Menu {
+public final class Freecam extends Module {
 
     public static final Freecam instance = new Freecam();
 
+    private final Settings.Decimal flySpeed = decimal("Speed", "speed", "Freecam fly speed", 0.6, 0.1, 3.0);
+
+    private final Settings.Key keybind = key("Freecam Key", "keybind", "Activation key", GLFW.GLFW_KEY_F4);
+
     private static final float TURN_MULTIPLIER = 0.15f;
+    /**
+     * Per-tick velocity retention. Lower is snappier, higher glides longer.
+     */
+    private static final double FRICTION = 0.82;
+    /**
+     * Below this the camera is treated as stopped, so it never creeps.
+     */
+    private static final double VELOCITY_EPSILON = 1e-4;
 
     private boolean engaged;
     private double camX, camY, camZ;
+    private double prevCamX, prevCamY, prevCamZ;
+    private double velX, velY, velZ;
     @Getter private float cameraYaw;
     @Getter private float cameraPitch;
 
@@ -44,14 +62,11 @@ public final class Freecam extends Module implements Menu {
     private float frozenBodyYaw;
     private float frozenBodyPitch;
     private CameraType savedPerspective;
-    private float flySpeed;
 
-    private boolean awaitingKeybind;
     private boolean keyWasDown;
 
     private Freecam() {
-        super("freecam", "Freecam", "Detach the camera and fly it freely; your body stays put.", "Visual");
-        flySpeed = (float) Config.getInt(baseConfig + ".speed", 60) / 100f;
+        super("freecam", "Freecam", "Detach the camera and fly it freely; your body stays put.", Category.RENDER);
     }
 
     /**
@@ -61,8 +76,15 @@ public final class Freecam extends Module implements Menu {
         return isActive() && engaged;
     }
 
-    public Vec3 getCameraPos() {
-        return new Vec3(camX, camY, camZ);
+    /**
+     * The fly step lands once per tick, so the render camera interpolates between the
+     * previous and current position. Otherwise the view steps at 20 Hz.
+     */
+    public Vec3 getCameraPos(float partialTicks) {
+        return new Vec3(
+            Mth.lerp(partialTicks, prevCamX, camX),
+            Mth.lerp(partialTicks, prevCamY, camY),
+            Mth.lerp(partialTicks, prevCamZ, camZ));
     }
 
     /**
@@ -76,11 +98,14 @@ public final class Freecam extends Module implements Menu {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
+        handleToggleKey();
+
         if (!isActive()) {
             if (engaged) disengage();
             return;
         }
-        handleToggleKey();
+        // Engaging here rather than in onActivate covers being enabled outside a world.
+        if (!engaged) engage();
         if (engaged) {
             freezePlayer();
             flyCamera();
@@ -93,13 +118,10 @@ public final class Freecam extends Module implements Menu {
     }
 
     private void handleToggleKey() {
-        int key = getKeybind();
+        int key = keybind.get();
         if (key == GLFW.GLFW_KEY_UNKNOWN) return;
         boolean down = KeybindUtil.isKeyDown(key);
-        if (down && !keyWasDown) {
-            if (engaged) disengage();
-            else engage();
-        }
+        if (down && !keyWasDown) toggle();
         keyWasDown = down;
     }
 
@@ -107,9 +129,10 @@ public final class Freecam extends Module implements Menu {
         if (mc.player == null) return;
         engaged = true;
         Vec3 eye = mc.player.getEyePosition();
-        camX = eye.x;
-        camY = eye.y;
-        camZ = eye.z;
+        camX = prevCamX = eye.x;
+        camY = prevCamY = eye.y;
+        camZ = prevCamZ = eye.z;
+        velX = velY = velZ = 0;
         cameraYaw = mc.player.getYRot();
         cameraPitch = mc.player.getXRot();
         frozenPos = mc.player.position();
@@ -132,6 +155,11 @@ public final class Freecam extends Module implements Menu {
 
     /**
      * Pins the player at the detach point each tick so it never drifts client-side.
+     * <p>
+     * The movement keys still drive vanilla's own input handling while they fly the camera,
+     * so the body's crouch/sprint state is reset here too. Otherwise you watch your own
+     * ghost sneak and sprint in place. This runs after the tick, so it is the state the
+     * next frame renders.
      */
     private void freezePlayer() {
         if (mc.player == null || frozenPos == null) return;
@@ -140,44 +168,61 @@ public final class Freecam extends Module implements Menu {
         mc.player.setOldPosAndRot(frozenPos, frozenBodyYaw, frozenBodyPitch);
         mc.player.setYRot(frozenBodyYaw);
         mc.player.setXRot(frozenBodyPitch);
+
+        mc.player.input.keyPresses = Input.EMPTY;
+        mc.player.setShiftKeyDown(false);
+        mc.player.setSprinting(false);
+        mc.player.setPose(Pose.STANDING);
     }
 
     private void flyCamera() {
+        prevCamX = camX;
+        prevCamY = camY;
+        prevCamZ = camZ;
+
         var opts = mc.options;
         double rad = Math.toRadians(cameraYaw);
         double sin = Math.sin(rad);
         double cos = Math.cos(rad);
-        double mx = 0, my = 0, mz = 0;
+        double dx = 0, dy = 0, dz = 0;
         if (opts.keyUp.isDown()) {
-            mx += -sin;
-            mz += cos;
+            dx += -sin;
+            dz += cos;
         }
         if (opts.keyDown.isDown()) {
-            mx += sin;
-            mz += -cos;
+            dx += sin;
+            dz += -cos;
         }
         if (opts.keyRight.isDown()) {
-            mx += cos;
-            mz += sin;
+            dx += -cos;
+            dz += -sin;
         }
         if (opts.keyLeft.isDown()) {
-            mx += -cos;
-            mz += -sin;
+            dx += cos;
+            dz += sin;
         }
-        if (opts.keyJump.isDown()) my += 1;
-        if (opts.keyShift.isDown()) my -= 1;
+        if (opts.keyJump.isDown()) dy += 1;
+        if (opts.keyShift.isDown()) dy -= 1;
 
-        camX += mx * flySpeed;
-        camY += my * flySpeed;
-        camZ += mz * flySpeed;
-    }
+        double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (len > 1e-6) {
+            dx /= len;
+            dy /= len;
+            dz /= len;
+        }
 
-    private int getKeybind() {
-        return Config.getInt(baseConfig + ".keybind", GLFW.GLFW_KEY_F4);
-    }
+        double accel = flySpeed.get().doubleValue() * (1 - FRICTION);
+        velX = velX * FRICTION + dx * accel;
+        velY = velY * FRICTION + dy * accel;
+        velZ = velZ * FRICTION + dz * accel;
 
-    private void setKeybind(int key) {
-        Config.setProperty(baseConfig + ".keybind", String.valueOf(key));
+        if (Math.abs(velX) < VELOCITY_EPSILON) velX = 0;
+        if (Math.abs(velY) < VELOCITY_EPSILON) velY = 0;
+        if (Math.abs(velZ) < VELOCITY_EPSILON) velZ = 0;
+
+        camX += velX;
+        camY += velY;
+        camZ += velZ;
     }
 
     @Override
@@ -201,24 +246,11 @@ public final class Freecam extends Module implements Menu {
 
         ImGui.separator();
 
-        float[] speed = {flySpeed};
-        if (ImGui.sliderFloat("Speed##freecamSpeed", speed, 0.1f, 3.0f)) {
-            flySpeed = speed[0];
-            Config.setProperty(baseConfig + ".speed", String.valueOf(Math.round(flySpeed * 100)));
-        }
+        flySpeed.render();
 
         ImGui.separator();
 
-        int result = KeybindUtil.renderKeybindButton("Freecam Key", "freecamKeybind", getKeybind(), awaitingKeybind);
-        if (result == KeybindUtil.START_LISTENING) {
-            awaitingKeybind = true;
-        } else if (result == KeybindUtil.CLEAR_BIND) {
-            setKeybind(GLFW.GLFW_KEY_UNKNOWN);
-            awaitingKeybind = false;
-        } else if (result != KeybindUtil.NO_CHANGE) {
-            setKeybind(result);
-            awaitingKeybind = false;
-        }
+        keybind.render();
 
         ImGui.end();
     }

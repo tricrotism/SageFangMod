@@ -11,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * When Freecam is engaged, overrides the camera's final position and rotation at
- * the tail of {@code Camera.alignWithEntity()} — after vanilla (and FreeLook's
- * rotation {@code @ModifyArgs}) have run — so the render camera detaches from the
+ * the tail of {@code Camera.alignWithEntity()}, after vanilla and FreeLook's
+ * rotation {@code @ModifyArgs} have run, so the render camera detaches from the
  * player and follows the freecam controller instead.
  */
 @Mixin(Camera.class)
@@ -27,6 +27,6 @@ public abstract class FreecamCameraMixin {
         Freecam freecam = Freecam.instance;
         if (!freecam.isEngaged()) return;
         setRotation(freecam.getCameraYaw(), freecam.getCameraPitch());
-        setPosition(freecam.getCameraPos());
+        setPosition(freecam.getCameraPos(partialTicks));
     }
 }

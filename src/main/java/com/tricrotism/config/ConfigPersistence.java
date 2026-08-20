@@ -73,7 +73,7 @@ public final class ConfigPersistence {
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("# SageFang Configuration — auto-saved\n\n");
+            sb.append("# SageFang configuration, auto-saved\n\n");
 
             String lastSection = "";
             for (var entry : sorted.entrySet()) {

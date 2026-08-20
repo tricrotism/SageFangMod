@@ -6,8 +6,8 @@ import net.minecraft.world.phys.Vec3;
 /**
  * Fired at the head of {@code Entity.move(MoverType, Vec3)} for every moving
  * entity. Handlers may rewrite {@link #movement} in place (via
- * {@link com.tricrotism.api.duck.IVec3}) to change how the entity moves this tick
- * — that is how boat-flight style modules steer their vehicle.
+ * {@link com.tricrotism.api.duck.IVec3}) to change how the entity moves this tick.
+ * That is how boat-flight style modules steer their vehicle.
  *
  * <p>Singleton-pooled like the other SageFang events: never hold a reference
  * across ticks.

@@ -1,11 +1,11 @@
 package com.tricrotism.modules.logger;
 
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
@@ -16,40 +16,41 @@ import java.util.Deque;
 
 /**
  * Logs custom plugin-message payloads in both directions, showing the channel id
- * and payload contents — useful for reverse-engineering server plugins. Captured
+ * and payload contents, which is what you need to reverse-engineer server plugins. Captured
  * in {@code ConnectionMixin}; entries go to a bounded in-window log rather than
  * the console. Ported from the Meteor addon's payload-logger.
  */
-public final class PayloadLogger extends Module implements Menu {
+public final class PayloadLogger extends Module {
 
     public static final PayloadLogger instance = new PayloadLogger();
+
+    private final Settings.Bool logC2S =
+        bool("C2S##plC2S", "c2s", "Log client-to-server payloads", true);
+    private final Settings.Bool logS2C =
+        bool("S2C##plS2C", "s2c", "Log server-to-client payloads", true);
 
     private static final int MAX_ENTRIES = 200;
 
     private final Deque<String> entries = new ArrayDeque<>();
-    private boolean logC2S;
-    private boolean logS2C;
 
     private PayloadLogger() {
-        super("payloadlogger", "Payload Logger", "Log custom plugin-message payloads both ways.", "Logger");
-        logC2S = Config.getBool(baseConfig + ".c2s", true);
-        logS2C = Config.getBool(baseConfig + ".s2c", true);
+        super("payloadlogger", "Payload Logger", "Log custom plugin-message payloads both ways.", Category.LOGGING);
     }
 
     /**
      * Called from ConnectionMixin for outbound packets.
      */
     public void onOutbound(Packet<?> packet) {
-        if (!isActive() || !logC2S) return;
-        if (packet instanceof ServerboundCustomPayloadPacket p) add("C2S", p.payload());
+        if (!isActive() || !logC2S.get()) return;
+        if (packet instanceof ServerboundCustomPayloadPacket(CustomPacketPayload payload)) add("C2S", payload);
     }
 
     /**
      * Called from ConnectionMixin for inbound packets.
      */
     public void onInbound(Packet<?> packet) {
-        if (!isActive() || !logS2C) return;
-        if (packet instanceof ClientboundCustomPayloadPacket p) add("S2C", p.payload());
+        if (!isActive() || !logS2C.get()) return;
+        if (packet instanceof ClientboundCustomPayloadPacket(CustomPacketPayload payload)) add("S2C", payload);
     }
 
     private void add(String direction, CustomPacketPayload payload) {
@@ -81,15 +82,9 @@ public final class PayloadLogger extends Module implements Menu {
         ImGui.begin(title, ImGuiWindowFlags.None);
         if (ImGui.checkbox("Enabled##payloadLoggerEnabled", isActive())) toggle();
         ImGui.sameLine();
-        if (ImGui.checkbox("C2S##plC2S", logC2S)) {
-            logC2S = !logC2S;
-            Config.setProperty(baseConfig + ".c2s", String.valueOf(logC2S));
-        }
+        if (ImGui.checkbox("C2S##plC2S", logC2S.get())) logC2S.set(!logC2S.get());
         ImGui.sameLine();
-        if (ImGui.checkbox("S2C##plS2C", logS2C)) {
-            logS2C = !logS2C;
-            Config.setProperty(baseConfig + ".s2c", String.valueOf(logS2C));
-        }
+        if (ImGui.checkbox("S2C##plS2C", logS2C.get())) logS2C.set(!logS2C.get());
         ImGui.sameLine();
         if (ImGui.button("Clear##plClear")) {
             synchronized (entries) {

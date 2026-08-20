@@ -1,14 +1,11 @@
 package com.tricrotism.modules.misc;
 
 import com.tricrotism.SageFang;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.mixin.accessors.ConnectionAccessor;
 import com.tricrotism.utils.SFLog;
-import imgui.ImGui;
-import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
 import io.netty.channel.Channel;
 
 /**
@@ -18,20 +15,21 @@ import io.netty.channel.Channel;
  * on, activation also closes the underlying netty channel, forcing a real
  * disconnect. Ported from the Meteor addon's connection-cut.
  */
-public final class ConnectionCut extends Module implements Menu {
+public final class ConnectionCut extends Module {
 
     public static final ConnectionCut instance = new ConnectionCut();
 
-    private boolean closeChannel;
+    private final Settings.Bool closeChannel =
+        bool("Close Channel", "closechannel",
+            "Close the TCP channel on activate, forcing a real disconnect; off means packets are only dropped", false);
 
     private ConnectionCut() {
-        super("connectioncut", "Connection Cut", "Block all inbound/outbound packets (simulate a dropped connection).", "Network");
-        closeChannel = Config.getBool(baseConfig + ".closechannel", false);
+        super("connectioncut", "Connection Cut", "Block all inbound/outbound packets (simulate a dropped connection).", Category.NETWORK);
     }
 
     @Override
     public void onActivate() {
-        if (!closeChannel) return;
+        if (!closeChannel.get()) return;
         var listener = mc.getConnection();
         if (listener == null) return;
         try {
@@ -45,22 +43,4 @@ public final class ConnectionCut extends Module implements Menu {
         }
     }
 
-    @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.AlwaysAutoResize);
-
-        if (ImGui.checkbox("Enabled##connectionCutEnabled", isActive())) toggle();
-        if (ImGui.checkbox("Close Channel##connectionCutClose", closeChannel)) {
-            closeChannel = !closeChannel;
-            Config.setProperty(baseConfig + ".closechannel", String.valueOf(closeChannel));
-        }
-        if (ImGui.isItemHovered()) {
-            ImGui.setTooltip("Actually close the TCP channel on activate (forces a disconnect).\nOff: only silently drop packets.");
-        }
-
-        ImGui.end();
-    }
 }

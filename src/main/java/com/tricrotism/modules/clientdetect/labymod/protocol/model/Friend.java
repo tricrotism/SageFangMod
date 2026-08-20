@@ -29,7 +29,7 @@ public class Friend {
     public Friend() {}
 
     /**
-     * Minimal friend with just identity set — used to build the local-player
+     * Minimal friend with just identity set. Used to build the local-player
      * "self" friend and other senders/recipients where the full profile is
      * unknown.
      */

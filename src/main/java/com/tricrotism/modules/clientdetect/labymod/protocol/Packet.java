@@ -2,7 +2,7 @@ package com.tricrotism.modules.clientdetect.labymod.protocol;
 
 /**
  * Base type for every LabyConnect protocol packet. A packet knows how to
- * (de)serialize its own body — the leading varint packet id is handled by the
+ * (de)serialize its own body. The leading varint packet id is handled by the
  * {@link PacketRegistry} and the framing layer, not here.
  *
  * <p>Each concrete subclass is registered against a numeric id in

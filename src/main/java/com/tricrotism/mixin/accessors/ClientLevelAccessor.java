@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 /**
  * Exposes {@code ClientLevel.getBlockStatePredictionHandler()} (package-private)
- * so modules can read/advance the vanilla block-action prediction sequence — used
+ * so modules can read/advance the vanilla block-action prediction sequence. Used
  * by {@code SingleMine}'s Vanilla/Current sequence modes.
  */
 @Mixin(ClientLevel.class)

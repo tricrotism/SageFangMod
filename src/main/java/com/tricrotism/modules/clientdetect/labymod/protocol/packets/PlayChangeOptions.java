@@ -8,7 +8,7 @@ import java.util.TimeZone;
 
 /**
  * Serverbound (ID 21): change your visibility options and online status at
- * runtime — the post-login counterpart to {@link LoginOptions} (ID 6).
+ * runtime. The post-login counterpart to {@link LoginOptions} (ID 6).
  *
  * <p>Sent by {@code LabySocial.setStatus}.
  */

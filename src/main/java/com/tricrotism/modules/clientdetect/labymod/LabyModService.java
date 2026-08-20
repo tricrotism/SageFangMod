@@ -48,7 +48,7 @@ public class LabyModService {
 
     /**
      * Per-game-tick driver. Latches {@link #handshakeComplete} once the session
-     * reaches PLAY or DISCONNECTED, then — only while connected and in PLAY —
+     * reaches PLAY or DISCONNECTED, then, only while connected and in PLAY,
      * resyncs the online-player list on the first tick and every
      * {@value #SYNC_INTERVAL_TICKS} ticks thereafter. Called from the game thread.
      */
@@ -120,7 +120,7 @@ public class LabyModService {
     }
 
     /**
-     * True for a real, non-zero version-4 (random) UUID — filters out bot/NPC ids.
+     * True for a real, non-zero version-4 (random) UUID. Filters out bot/NPC ids.
      */
     private static boolean isValidV4UUID(UUID uuid) {
         return uuid.getMostSignificantBits() != 0

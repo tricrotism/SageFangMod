@@ -29,7 +29,7 @@ public class InfoMenu implements Menu {
             var mc = Minecraft.getInstance();
 
             int flags = ImGuiWindowFlags.AlwaysAutoResize;
-            if (mc.screen == null) {
+            if (mc.gui.screen() == null) {
                 flags |= ImGuiWindowFlags.NoInputs;
             }
 
@@ -71,7 +71,7 @@ public class InfoMenu implements Menu {
 
                 ImGui.text("Packets/s: " + Math.round(mc.player.connection.getConnection().getAverageReceivedPackets()));
 
-                if (!mc.isSingleplayer()) {
+                if (!mc.hasSingleplayerServer()) {
                     var remoteAddress = mc.player.connection.getConnection().getRemoteAddress().toString();
                     var serverData = mc.player.connection.getServerData();
                     if (serverData != null) {
@@ -119,7 +119,7 @@ public class InfoMenu implements Menu {
             }
 
             // Server section
-            if (SageFangConfig.isServerInfoMenuEnabled() && !mc.isSingleplayer() && mc.getCurrentServer() != null) {
+            if (SageFangConfig.isServerInfoMenuEnabled() && !mc.hasSingleplayerServer() && mc.getCurrentServer() != null) {
                 serverShown = true;
                 ImGui.separatorText("Server");
 

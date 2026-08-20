@@ -13,7 +13,7 @@ import java.util.Deque;
  * Central feedback sink for module messages. Depending on the
  * {@code sagefang.log.chat} toggle each line goes to the prefixed chat line (via
  * {@link MessageUtils}) or is kept only in the in-game log window
- * ({@link com.tricrotism.features.menus.LogMenu}) — either way it is always
+ * ({@link com.tricrotism.features.menus.LogMenu}). Either way it is always
  * appended to the window's buffer, so nothing is lost when chat output is off.
  */
 public final class SFLog {
@@ -38,7 +38,7 @@ public final class SFLog {
     }
 
     /**
-     * Logs a line of module feedback. Safe to call from any thread — the chat hop
+     * Logs a line of module feedback. Safe to call from any thread. The chat hop
      * is scheduled onto the client thread.
      */
     public static void log(String source, String message) {

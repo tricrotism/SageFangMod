@@ -2,15 +2,14 @@ package com.tricrotism.modules.crash;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.mixin.accessors.ConnectionAccessor;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImInt;
-import io.avaje.config.Config;
 import io.netty.channel.Channel;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import net.minecraft.network.Connection;
@@ -37,38 +36,27 @@ import net.minecraft.world.inventory.ContainerInput;
  * <p>
  * Kick methods:
  * <ul>
- *   <li><b>Invalid Slot</b> — {@link ServerboundSetCarriedItemPacket} with slot -1</li>
- *   <li><b>Invalid View Distance</b> — {@link ServerboundClientInformationPacket} with view distance -2</li>
+ *   <li><b>Invalid Slot</b>: {@link ServerboundSetCarriedItemPacket} with slot -1</li>
+ *   <li><b>Invalid View Distance</b>: {@link ServerboundClientInformationPacket} with view distance -2</li>
  * </ul>
  * The interact-based vectors (attack-self, boat/entity NBT) and the macro-bound
  * modes (kick-dupe, auto-disconnect) from the original are intentionally omitted.
  */
-public class KickCrash extends Module implements Menu {
-
-    public static final KickCrash instance = new KickCrash();
+public class KickCrash extends Module {
 
     private static final String[] KICK_LABELS = {"Invalid Slot", "Invalid View Distance"};
+    public static final KickCrash instance = new KickCrash();
+
+    private final Settings.Mode kickMethod =
+        mode("Kick Method", "kickMethod", "Which kick technique", 0, KICK_LABELS);
+    private final Settings.Int packetCount =
+        integer("Lag Packets", "packetCount", "Packets in the burst", 200, 1, 1000);
+
     private static final int KICK_HELD_SLOT = 0;
     private static final int KICK_STATUS = 1;
 
     public KickCrash() {
-        super("kickcrash", "Kick Crash", "Force the server to kick you on demand (panic disconnect / combat log).", "Combat");
-    }
-
-    private int kickMethod() {
-        return Config.getInt(baseConfig + ".kickMethod", KICK_HELD_SLOT);
-    }
-
-    private void setKickMethod(int v) {
-        Config.setProperty(baseConfig + ".kickMethod", String.valueOf(v));
-    }
-
-    private int packetCount() {
-        return Config.getInt(baseConfig + ".packetCount", 200);
-    }
-
-    private void setPacketCount(int v) {
-        Config.setProperty(baseConfig + ".packetCount", String.valueOf(v));
+        super("kickcrash", "Kick Crash", "Force the server to kick you on demand (panic disconnect / combat log).", Category.COMBAT);
     }
 
     private boolean canSend() {
@@ -83,7 +71,7 @@ public class KickCrash extends Module implements Menu {
     }
 
     private Packet<?> buildKickPacket() {
-        return switch (kickMethod()) {
+        return switch (kickMethod.get()) {
             case KICK_STATUS -> new ServerboundClientInformationPacket(new ClientInformation(
                 "en_us", -2, ChatVisiblity.FULL, true, 0, HumanoidArm.RIGHT, false, true, ParticleStatus.ALL));
             default -> new ServerboundSetCarriedItemPacket(-1);
@@ -99,7 +87,7 @@ public class KickCrash extends Module implements Menu {
             mc.player.containerMenu.containerId, 0, (short) 0, (byte) 0,
             ContainerInput.PICKUP, new Int2ObjectArrayMap<>(), HashedStack.EMPTY);
 
-        int count = packetCount();
+        int count = packetCount.get();
         for (int i = 0; i < count; i++) {
             channel.write(lag);
         }
@@ -136,14 +124,11 @@ public class KickCrash extends Module implements Menu {
             }
             ImGui.separator();
 
-            ImInt kickInt = new ImInt(kickMethod());
-            if (ImGui.combo("Kick Method##kcMethod", kickInt, KICK_LABELS, KICK_LABELS.length)) {
-                setKickMethod(kickInt.get());
-            }
+            kickMethod.render();
 
-            int[] countArr = {packetCount()};
+            int[] countArr = {packetCount.get()};
             if (ImGui.sliderInt("Lag Packets##kcCount", countArr, 1, 1000)) {
-                setPacketCount(countArr[0]);
+                packetCount.set(countArr[0]);
             }
             if (ImGui.isItemHovered()) {
                 ImGui.setTooltip("Container-click packets sent before and after the kick packet");

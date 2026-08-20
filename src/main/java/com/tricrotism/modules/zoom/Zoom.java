@@ -2,16 +2,14 @@ package com.tricrotism.modules.zoom;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.utils.KeybindUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
-import lombok.Getter;
 import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
@@ -23,20 +21,23 @@ import org.lwjgl.glfw.GLFW;
  * {@link #getInterpolatedFovMultiplier(float)}. Scroll-to-zoom is intercepted
  * by {@code MouseInputMixin} which calls {@link #handleScroll(double)}.
  */
-public class Zoom extends Module implements Menu {
+public class Zoom extends Module {
 
     public static final Zoom instance = new Zoom();
+
+    private final Settings.Key keybind = key("Zoom Key", "keybind", "Activation key", GLFW.GLFW_KEY_Z);
+
+    private final Settings.Bool holdMode = bool("Hold Mode", "holdMode", "Hold: zoom while key held; toggle otherwise", true);
+    private final Settings.Bool scrollToZoom = bool("Scroll to Zoom", "scrollToZoom", "Fine-tune zoom with scroll", true);
+    private final Settings.Bool smoothTransition = bool("Smooth Transition", "smoothTransition", "Ease the zoom in and out", true);
+    private final Settings.Bool cinematicCamera = bool("Cinematic Camera", "cinematicCamera", "Enable cinematic camera while zoomed", false);
+    private final Settings.Decimal baseZoomDistance = decimal("Zoom Distance", "zoomDistance", "FOV divisor; 4 means FOV/4", 4.0, 2.0, 20.0);
 
     private static final float TRANSITION_SPEED = 0.3f;
     private static final float SNAP_THRESHOLD = 0.001f;
     private static final float MIN_ZOOM_DISTANCE = 1.1f;
     private static final float MAX_ZOOM_DISTANCE = 1000.0f;
 
-    private boolean holdMode;
-    private float baseZoomDistance;
-    @Getter private boolean scrollToZoom;
-    private boolean smoothTransition;
-    private boolean cinematicCamera;
 
     private boolean zoomEngaged;
     private float scrollOffset;
@@ -44,40 +45,24 @@ public class Zoom extends Module implements Menu {
     private float currentFovMultiplier = 1.0f;
     private boolean savedSmoothCamera;
 
-    private boolean awaitingKeybind;
     private boolean keyWasDown;
 
+    public boolean isScrollToZoom() {return scrollToZoom.get();}
+
     public Zoom() {
-        super("zoom", "Zoom", "Adjustable camera zoom with smooth transitions.", "Visual");
+        super("zoom", "Zoom", "Adjustable camera zoom with smooth transitions.", Category.RENDER);
         migrateKeybind();
         loadConfig();
     }
 
     private void loadConfig() {
-        holdMode = Config.getBool(baseConfig + ".holdMode", true);
-        baseZoomDistance = Float.parseFloat(Config.get(baseConfig + ".zoomDistance", "4.0"));
-        scrollToZoom = Config.getBool(baseConfig + ".scrollToZoom", true);
-        smoothTransition = Config.getBool(baseConfig + ".smoothTransition", true);
-        cinematicCamera = Config.getBool(baseConfig + ".cinematicCamera", false);
     }
 
     private void migrateKeybind() {
-        if (!Config.getBool(baseConfig + ".keybindV2", false)) {
-            Config.setProperty(baseConfig + ".keybind", String.valueOf(GLFW.GLFW_KEY_Z));
-            Config.setProperty(baseConfig + ".keybindV2", "true");
-        }
-    }
-
-    private int getKeybind() {
-        return Config.getInt(baseConfig + ".keybind", GLFW.GLFW_KEY_Z);
-    }
-
-    private void setKeybind(int key) {
-        Config.setProperty(baseConfig + ".keybind", String.valueOf(key));
     }
 
     /**
-     * True when the zoom effect is visually active — either the key is held,
+     * True when the zoom effect is visually active: either the key is held,
      * or the FOV is still transitioning back to normal.
      */
     public boolean isZoomEngaged() {
@@ -89,7 +74,7 @@ public class Zoom extends Module implements Menu {
      * using the render partial tick for frame-rate-independent smoothness.
      * 1.0 = normal, lower = zoomed. Read by {@code GameRendererFovMixin}.
      *
-     * @param partialTick fractional tick progress (0.0–1.0) within the current render frame
+     * @param partialTick fractional tick progress (0.0 to 1.0) within the current render frame
      */
     public float getInterpolatedFovMultiplier(float partialTick) {
         return Mth.lerp(partialTick, previousFovMultiplier, currentFovMultiplier);
@@ -105,7 +90,7 @@ public class Zoom extends Module implements Menu {
         if (!zoomEngaged) return;
         float direction = (float) Math.signum(delta);
         float scrollDelta = 0.25f * direction;
-        float newDistance = baseZoomDistance + scrollOffset + scrollDelta;
+        float newDistance = baseZoomDistance.get().floatValue() + scrollOffset + scrollDelta;
         if (newDistance >= MIN_ZOOM_DISTANCE && newDistance <= MAX_ZOOM_DISTANCE) {
             scrollOffset += scrollDelta;
         }
@@ -115,10 +100,10 @@ public class Zoom extends Module implements Menu {
     private void onTick(TickEvent.Post event) {
         if (!isActive()) return;
 
-        int key = getKeybind();
+        int key = keybind.get();
         if (key != GLFW.GLFW_KEY_UNKNOWN) {
             boolean down = KeybindUtil.isKeyDown(key);
-            if (holdMode) {
+            if (holdMode.get()) {
                 setZoomState(down);
             } else {
                 if (down && !keyWasDown) setZoomState(!zoomEngaged);
@@ -126,9 +111,9 @@ public class Zoom extends Module implements Menu {
             keyWasDown = down;
         }
 
-        float effectiveDistance = baseZoomDistance + scrollOffset;
+        float effectiveDistance = baseZoomDistance.get().floatValue() + scrollOffset;
         float target = zoomEngaged ? (1.0f / effectiveDistance) : 1.0f;
-        if (smoothTransition) {
+        if (smoothTransition.get()) {
             previousFovMultiplier = currentFovMultiplier;
             currentFovMultiplier += (target - currentFovMultiplier) * TRANSITION_SPEED;
             if (Math.abs(currentFovMultiplier - target) < SNAP_THRESHOLD) {
@@ -153,10 +138,10 @@ public class Zoom extends Module implements Menu {
         if (this.zoomEngaged == engaged) return;
         this.zoomEngaged = engaged;
 
-        if (engaged && cinematicCamera) {
+        if (engaged && cinematicCamera.get()) {
             savedSmoothCamera = mc.options.smoothCamera;
             mc.options.smoothCamera = true;
-        } else if (!engaged && cinematicCamera) {
+        } else if (!engaged && cinematicCamera.get()) {
             mc.options.smoothCamera = savedSmoothCamera;
         }
     }
@@ -176,69 +161,12 @@ public class Zoom extends Module implements Menu {
     }
 
     @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.AlwaysAutoResize);
-
-        if (ImGui.checkbox("Enabled##zoomEnabled", isActive())) toggle();
-
+    protected void renderExtra(ImGuiIO io) {
         if (isActive() && zoomEngaged) {
-            float effectiveDistance = baseZoomDistance + scrollOffset;
+            float effectiveDistance = baseZoomDistance.get().floatValue() + scrollOffset;
             ImGui.text(String.format("Zoom: %.1fx (FOV mult: %.3f)", effectiveDistance, currentFovMultiplier));
         }
-
-        ImGui.separator();
-
-        if (ImGui.checkbox("Hold Mode##zoomHold", holdMode)) {
-            holdMode = !holdMode;
-            Config.setProperty(baseConfig + ".holdMode", String.valueOf(holdMode));
-        }
-        if (ImGui.isItemHovered())
-            ImGui.setTooltip("Hold: zoom while key held\nToggle: press to zoom, press again to unzoom");
-
-        float[] dist = {baseZoomDistance};
-        ImGui.setNextItemWidth(160);
-        if (ImGui.sliderFloat("Zoom Distance##zoomDist", dist, 2.0f, 20.0f, "%.1fx")) {
-            baseZoomDistance = dist[0];
-            Config.setProperty(baseConfig + ".zoomDistance", String.valueOf(baseZoomDistance));
-        }
-        if (ImGui.isItemHovered())
-            ImGui.setTooltip("FOV divisor. 4x means FOV is divided by 4.");
-
-        if (ImGui.checkbox("Scroll to Zoom##zoomScroll", scrollToZoom)) {
-            scrollToZoom = !scrollToZoom;
-            Config.setProperty(baseConfig + ".scrollToZoom", String.valueOf(scrollToZoom));
-        }
-        if (ImGui.isItemHovered())
-            ImGui.setTooltip("Use mouse scroll to fine-tune zoom level while zoomed.");
-
-        if (ImGui.checkbox("Smooth Transition##zoomSmooth", smoothTransition)) {
-            smoothTransition = !smoothTransition;
-            Config.setProperty(baseConfig + ".smoothTransition", String.valueOf(smoothTransition));
-        }
-
-        if (ImGui.checkbox("Cinematic Camera##zoomCinematic", cinematicCamera)) {
-            cinematicCamera = !cinematicCamera;
-            Config.setProperty(baseConfig + ".cinematicCamera", String.valueOf(cinematicCamera));
-        }
-        if (ImGui.isItemHovered())
-            ImGui.setTooltip("Enable smooth mouse movement while zoomed (like F8).");
-
-        ImGui.separator();
-
-        int result = KeybindUtil.renderKeybindButton("Zoom Key", "zoomKeybind", getKeybind(), awaitingKeybind);
-        if (result == KeybindUtil.START_LISTENING) {
-            awaitingKeybind = true;
-        } else if (result == KeybindUtil.CLEAR_BIND) {
-            setKeybind(GLFW.GLFW_KEY_UNKNOWN);
-            awaitingKeybind = false;
-        } else if (result != KeybindUtil.NO_CHANGE) {
-            setKeybind(result);
-            awaitingKeybind = false;
-        }
-
-        ImGui.end();
+        baseZoomDistance.render();
+        keybind.render();
     }
 }

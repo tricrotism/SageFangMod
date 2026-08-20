@@ -1,7 +1,7 @@
 package com.tricrotism.api.duck;
 
 /**
- * Lets modules mutate an otherwise-immutable {@code Vec3} in place — used where
+ * Lets modules mutate an otherwise-immutable {@code Vec3} in place. Used where
  * vanilla hands out a movement/position vector we need to rewrite without
  * reallocating (entity movement deltas, vehicle move packets).
  */

@@ -1,14 +1,11 @@
 package com.tricrotism.modules.combat;
 
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.world.TickEvent;
-import com.tricrotism.utils.KeybindUtil;
-import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
-import io.avaje.config.Config;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -22,32 +19,32 @@ import org.lwjgl.glfw.GLFW;
  * at when the bound key is pressed. Ported from the Meteor addon's double-anchor
  * (Meteor InvUtils inlined). Requires a respawn anchor and glowstone in the hotbar.
  */
-public final class DoubleAnchorMacro extends Module implements Menu {
+public final class DoubleAnchorMacro extends Module {
 
     public static final DoubleAnchorMacro instance = new DoubleAnchorMacro();
 
-    private int switchDelay;
-    private int totemSlot;
+    private final Settings.Key keybind = key("Activate", "keybind", "Activation key", GLFW.GLFW_KEY_UNKNOWN);
+
+    private final Settings.Int switchDelay = integer("Step Delay", "switchDelay", "Ticks between steps", 2, 0, 20);
+    private final Settings.Int totemSlot = integer("Totem Slot", "totemSlot", "Hotbar slot to hold a totem", 9, 1, 9);
+
 
     private int delayCounter;
     private int step;
     private boolean anchoring;
     private boolean keyWasDown;
-    private boolean awaitingKeybind;
 
     private DoubleAnchorMacro() {
-        super("doubleanchor", "Double Anchor", "Place and charge two respawn anchors on a keypress.", "Combat");
-        switchDelay = Config.getInt(baseConfig + ".switchDelay", 2);
-        totemSlot = Config.getInt(baseConfig + ".totemSlot", 1);
+        super("doubleanchor", "Double Anchor", "Place and charge two respawn anchors on a keypress.", Category.COMBAT);
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (!isActive()) return;
-        if (mc.player == null || mc.level == null || mc.gameMode == null || mc.screen != null) return;
+        if (mc.player == null || mc.level == null || mc.gameMode == null || mc.gui.screen() != null) return;
         if (!hasRequiredItems()) return;
 
-        boolean down = KeybindUtil.isKeyDown(getKeybind());
+        boolean down = keybind.isDown();
         if (!anchoring && down && !keyWasDown) {
             anchoring = true;
             step = 0;
@@ -64,7 +61,7 @@ public final class DoubleAnchorMacro extends Module implements Menu {
             return;
         }
 
-        if (delayCounter < switchDelay) {
+        if (delayCounter < switchDelay.get()) {
             delayCounter++;
             return;
         }
@@ -81,7 +78,7 @@ public final class DoubleAnchorMacro extends Module implements Menu {
             }
             case 6 -> swapTo(Items.GLOWSTONE);
             case 7 -> use(hit);
-            case 8 -> selectSlot(totemSlot - 1);
+            case 8 -> selectSlot(totemSlot.get() - 1);
             case 9 -> use(hit);
             default -> {
                 anchoring = false;
@@ -122,50 +119,8 @@ public final class DoubleAnchorMacro extends Module implements Menu {
         return anchor && glow;
     }
 
-    private int getKeybind() {
-        return Config.getInt(baseConfig + ".keybind", GLFW.GLFW_KEY_UNKNOWN);
-    }
-
-    private void setKeybind(int key) {
-        Config.setProperty(baseConfig + ".keybind", String.valueOf(key));
-    }
-
     @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.AlwaysAutoResize);
-
-        if (ImGui.checkbox("Enabled##doubleAnchorEnabled", isActive())) toggle();
-        ImGui.separator();
-
-        int[] sd = {switchDelay};
-        ImGui.setNextItemWidth(160);
-        if (ImGui.sliderInt("Step Delay##daDelay", sd, 0, 20)) {
-            switchDelay = sd[0];
-            Config.setProperty(baseConfig + ".switchDelay", String.valueOf(switchDelay));
-        }
-
-        int[] ts = {totemSlot};
-        ImGui.setNextItemWidth(160);
-        if (ImGui.sliderInt("Totem Slot##daTotem", ts, 1, 9)) {
-            totemSlot = ts[0];
-            Config.setProperty(baseConfig + ".totemSlot", String.valueOf(totemSlot));
-        }
-
-        ImGui.separator();
-        int result = KeybindUtil.renderKeybindButton("Activate", "doubleAnchorKeybind", getKeybind(), awaitingKeybind);
-        if (result == KeybindUtil.START_LISTENING) {
-            awaitingKeybind = true;
-        } else if (result == KeybindUtil.CLEAR_BIND) {
-            setKeybind(GLFW.GLFW_KEY_UNKNOWN);
-            awaitingKeybind = false;
-        } else if (result != KeybindUtil.NO_CHANGE) {
-            setKeybind(result);
-            awaitingKeybind = false;
-        }
-
-        ImGui.end();
+    protected void renderExtra(ImGuiIO io) {
+        keybind.render();
     }
 }

@@ -22,7 +22,7 @@ public class PlayerInfoMenu implements Menu {
             }
 
             int flags = ImGuiWindowFlags.AlwaysAutoResize;
-            if (Minecraft.getInstance().screen == null) {
+            if (Minecraft.getInstance().gui.screen() == null) {
                 flags |= ImGuiWindowFlags.NoInputs;
             }
 
@@ -61,7 +61,7 @@ public class PlayerInfoMenu implements Menu {
                 ImGui.sameLine();
                 ImGui.text(String.valueOf(Math.round(Minecraft.getInstance().player.connection.getConnection().getAverageReceivedPackets())));
 
-                if (!Minecraft.getInstance().isSingleplayer()) {
+                if (!Minecraft.getInstance().hasSingleplayerServer()) {
                     var remoteAddress = Minecraft.getInstance().player.connection.getConnection().getRemoteAddress().toString();
                     var serverData = Minecraft.getInstance().player.connection.getServerData();
                     if (serverData != null) {

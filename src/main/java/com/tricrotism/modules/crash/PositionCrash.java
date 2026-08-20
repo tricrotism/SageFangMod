@@ -2,60 +2,43 @@ package com.tricrotism.modules.crash;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.mixin.accessors.ConnectionAccessor;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImInt;
-import io.avaje.config.Config;
 import io.netty.channel.Channel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 
 /**
- * Position crash exploit — sends malformed position packets to trigger
+ * Position crash exploit. Sends malformed position packets to trigger
  * server-side anti-cheat crashes or undefined behavior.
  * <p>
  * Targets LPX checks: POSITION_A (NaN/Infinity), POSITION_C (High Y),
  * POSITION_D (High Yaw).
  */
-public class PositionCrash extends Module implements Menu {
+public class PositionCrash extends Module {
 
     public static final PositionCrash instance = new PositionCrash();
+
+    private final Settings.Mode mode =
+        mode("Mode", "mode", "Malformed-position variant", 0,
+            "NaN", "Infinity", "-Infinity", "High Y", "High Yaw");
+    private final Settings.Int speed =
+        integer("Packets/tick", "speed", "Packets per tick", 50, 1, 500);
+    private final Settings.Bool useRawChannel =
+        bool("Use Raw Channel", "useRawChannel", "Write straight to the netty channel", true);
 
     private static final String[] MODE_LABELS = {"NaN", "Infinity", "-Infinity", "High Y", "High Yaw"};
 
     public PositionCrash() {
-        super("positioncrash", "Position Crash", "Send malformed position packets to crash or exploit servers.", "Combat");
-    }
-
-    private int mode() {
-        return Config.getInt(baseConfig + ".mode", 0);
-    }
-
-    private void setMode(int v) {
-        Config.setProperty(baseConfig + ".mode", String.valueOf(v));
-    }
-
-    private int speed() {
-        return Config.getInt(baseConfig + ".speed", 50);
-    }
-
-    private void setSpeed(int v) {
-        Config.setProperty(baseConfig + ".speed", String.valueOf(v));
-    }
-
-    private boolean useRawChannel() {
-        return Config.getBool(baseConfig + ".useRawChannel", true);
-    }
-
-    private void setUseRawChannel(boolean v) {
-        Config.setProperty(baseConfig + ".useRawChannel", String.valueOf(v));
+        super("positioncrash", "Position Crash", "Send malformed position packets to crash or exploit servers.", Category.COMBAT);
     }
 
     @EventHandler
@@ -68,11 +51,11 @@ public class PositionCrash extends Module implements Menu {
         float playerYRot = mc.player.getYRot();
         float playerXRot = mc.player.getXRot();
 
-        ServerboundMovePlayerPacket packet = buildPacket(mode(), playerYRot, playerXRot);
+        ServerboundMovePlayerPacket packet = buildPacket(mode.get(), playerYRot, playerXRot);
 
-        int count = speed();
+        int count = speed.get();
 
-        if (useRawChannel()) {
+        if (useRawChannel.get()) {
             Connection connection = mc.getConnection().getConnection();
             Channel channel = ((ConnectionAccessor) connection).sagefang$getChannel();
             if (channel == null || !channel.isOpen()) return;
@@ -149,21 +132,18 @@ public class PositionCrash extends Module implements Menu {
             ImGui.separator();
 
             // Mode combo
-            ImInt modeInt = new ImInt(mode());
-            if (ImGui.combo("Mode##pcMode", modeInt, MODE_LABELS, MODE_LABELS.length)) {
-                setMode(modeInt.get());
-            }
+            mode.render();
 
             // Speed slider
-            int[] speedArr = {speed()};
+            int[] speedArr = {speed.get()};
             if (ImGui.sliderInt("Packets/tick##pcSpeed", speedArr, 1, 500)) {
-                setSpeed(speedArr[0]);
+                speed.set(speedArr[0]);
             }
 
             // Raw channel toggle
-            boolean raw = useRawChannel();
+            boolean raw = useRawChannel.get();
             if (ImGui.checkbox("Use Raw Channel##pcRaw", raw)) {
-                setUseRawChannel(!raw);
+                useRawChannel.set(!raw);
             }
             if (ImGui.isItemHovered()) {
                 ImGui.setTooltip("Use raw Netty channel for higher throughput");
@@ -172,10 +152,7 @@ public class PositionCrash extends Module implements Menu {
             ImGui.separator();
 
             // Current mode description
-            int currentMode = mode();
-            String desc = currentMode >= 0 && currentMode < MODE_LABELS.length
-                ? MODE_LABELS[currentMode]
-                : "Unknown";
+            String desc = mode.option();
             ImGui.text("Active: " + desc);
 
             ImGui.end();

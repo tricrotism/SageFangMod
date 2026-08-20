@@ -6,7 +6,7 @@ import com.tricrotism.modules.clientdetect.labymod.protocol.model.Friend;
 import lombok.Getter;
 
 /**
- * Typing indicator (ID 25) — clientbound when received, serverbound when sent.
+ * Typing indicator (ID 25). Clientbound when received, serverbound when sent.
  *
  * <p>Incoming indicators are handled by {@code LabySocial.onTyping} (which
  * tracks a per-friend typing timeout); outgoing ones are sent by
@@ -15,7 +15,7 @@ import lombok.Getter;
 @Getter
 public class PlayTyping extends Packet {
     /**
-     * The user who is (or stopped) typing — the local player when sending.
+     * The user who is (or stopped) typing. The local player when sending.
      */
     private Friend player;
     /**

@@ -2,8 +2,8 @@ package com.tricrotism.modules.clientdetect;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
-import com.tricrotism.api.menus.Menu;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameJoinedEvent;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
@@ -21,7 +21,6 @@ import imgui.flag.ImGuiInputTextFlags;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImInt;
 import imgui.type.ImString;
-import io.avaje.config.Config;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -29,12 +28,14 @@ import java.util.UUID;
 
 /**
  * Detects LabyMod users on the current server (tab-list badges) and exposes the
- * LabyConnect social layer — friends, requests, direct messages and status —
- * via this module's ImGui window. Always active; the window is shown by toggling
+ * LabyConnect social layer via this module's ImGui window: friends, requests,
+ * direct messages and status. Always active; the window is shown by toggling
  * the module's visibility in Settings.
  */
-public class ClientDetect extends Module implements Menu {
+public class ClientDetect extends Module {
     public static final ClientDetect instance = new ClientDetect();
+
+    private final Settings.Key openKey = key("Open (free cursor)", "openkey", "Open the panel with a free cursor", GLFW.GLFW_KEY_HOME);
 
     private static final UserStatus[] STATUS_VALUES = {UserStatus.ONLINE, UserStatus.AWAY, UserStatus.BUSY, UserStatus.OFFLINE};
     private static final String[] STATUS_LABELS = {"Online", "Away", "Busy", "Invisible"};
@@ -50,7 +51,6 @@ public class ClientDetect extends Module implements Menu {
     private boolean refocusChat;
     private boolean refocusAddFriend;
     private boolean openKeyWasDown;
-    private boolean awaitingKeybind;
 
     private ClientDetect() {
         super("clientdetect", "Client Detect",
@@ -59,7 +59,7 @@ public class ClientDetect extends Module implements Menu {
     }
 
     /**
-     * LabyMod detection is always on — the LabyConnect session runs whenever
+     * LabyMod detection is always on. The LabyConnect session runs whenever
      * connected to a server regardless of the persisted enabled flag.
      */
     @Override
@@ -94,21 +94,13 @@ public class ClientDetect extends Module implements Menu {
             openKeyWasDown = false;
             return;
         }
-        int key = getOpenKey();
+        int key = openKey.get();
         if (key == GLFW.GLFW_KEY_UNKNOWN) return;
         boolean down = KeybindUtil.isKeyDown(key);
-        if (down && !openKeyWasDown && mc.screen == null) {
-            mc.setScreen(new ClientDetectScreen());
+        if (down && !openKeyWasDown && mc.gui.screen() == null) {
+            mc.gui.setScreen(new ClientDetectScreen());
         }
         openKeyWasDown = down;
-    }
-
-    private int getOpenKey() {
-        return Config.getInt(baseConfig + ".openkey", GLFW.GLFW_KEY_HOME);
-    }
-
-    private void setOpenKey(int key) {
-        Config.setProperty(baseConfig + ".openkey", String.valueOf(key));
     }
 
     public boolean isLabyModUser(UUID uuid) {
@@ -128,7 +120,7 @@ public class ClientDetect extends Module implements Menu {
         if (!isVisible()) return;
         try {
             int flags = ImGuiWindowFlags.AlwaysAutoResize;
-            if (mc.screen == null) flags |= ImGuiWindowFlags.NoInputs;
+            if (mc.gui.screen() == null) flags |= ImGuiWindowFlags.NoInputs;
             ImGui.setNextWindowBgAlpha(0.55f);
             ImGui.begin(title, flags);
 
@@ -163,16 +155,7 @@ public class ClientDetect extends Module implements Menu {
     }
 
     private void renderOpenKeyButton() {
-        int result = KeybindUtil.renderKeybindButton("Open (free cursor)", "clientDetectOpenKey", getOpenKey(), awaitingKeybind);
-        if (result == KeybindUtil.START_LISTENING) {
-            awaitingKeybind = true;
-        } else if (result == KeybindUtil.CLEAR_BIND) {
-            setOpenKey(GLFW.GLFW_KEY_UNKNOWN);
-            awaitingKeybind = false;
-        } else if (result != KeybindUtil.NO_CHANGE) {
-            setOpenKey(result);
-            awaitingKeybind = false;
-        }
+        openKey.render();
     }
 
     private void renderStatusSelector(LabySocial social) {

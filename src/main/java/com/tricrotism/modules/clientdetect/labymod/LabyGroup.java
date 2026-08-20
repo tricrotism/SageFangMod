@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Static lookup for LabyMod rank groups — the id, display name and badge color
+ * Static lookup for LabyMod rank groups: the id, display name and badge color
  * delivered per user by {@code PacketUserBadge} (the rank byte is a group id;
  * see {@code LabyConnectSession.handleUserBadge}).
  *

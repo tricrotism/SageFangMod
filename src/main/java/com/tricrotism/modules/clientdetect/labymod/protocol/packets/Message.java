@@ -6,7 +6,7 @@ import com.tricrotism.modules.clientdetect.labymod.protocol.model.Friend;
 import lombok.Getter;
 
 /**
- * Direct message (ID 65) — clientbound when received, serverbound when sent.
+ * Direct message (ID 65). Clientbound when received, serverbound when sent.
  *
  * <p>Incoming messages are handled by {@code LabySocial.onMessage} (appended to
  * chat history and surfaced via an alert); outgoing ones are built by
