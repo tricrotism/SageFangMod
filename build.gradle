@@ -70,7 +70,7 @@ dependencies {
 
     include implementation("net.kyori:adventure-platform-fabric:${project.adventure_version}")
 
-    include implementation("io.avaje:avaje-config:5.1")
+    include implementation("io.avaje:avaje-config:5.2")
     include implementation("io.avaje:avaje-applog:1.2")
 
     include implementation("org.checkerframework:checker-qual:4.2.2")
