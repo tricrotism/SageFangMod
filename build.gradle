@@ -41,7 +41,7 @@ repositories {
 // which removed nstbir_resize_uint8, breaking NativeImage.resizeSubRectTo
 configurations.all {
     resolutionStrategy {
-        force 'org.lwjgl:lwjgl-stb:3.4.2'
+        force 'org.lwjgl:lwjgl-stb:3.4.3'
     }
 }
 
