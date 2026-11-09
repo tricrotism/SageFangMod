@@ -5,6 +5,7 @@ import com.mojang.serialization.DataResult;
 import com.tricrotism.SageFang;
 import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiCol;
@@ -71,7 +72,7 @@ public class ItemViewer extends Module {
 
             ItemStack stack = player.getMainHandItem();
             if (stack.isEmpty()) {
-                ImGui.text("Hold an item to inspect.");
+                ImGui.textUnformatted("Hold an item to inspect.");
                 ImGui.end();
                 return;
             }
@@ -83,10 +84,10 @@ public class ItemViewer extends Module {
                 lastItemHash = currentHash;
             }
 
-            ImGui.text("Item: " + stack.getHoverName().getString());
+            ImGui.textUnformatted("Item: " + stack.getHoverName().getString());
             Identifier itemKey = BuiltInRegistries.ITEM.getKey(stack.getItem());
-            ImGui.text("ID: " + (itemKey != null ? itemKey.toString() : "unknown"));
-            ImGui.text("Count: " + stack.getCount());
+            ImGui.textUnformatted("ID: " + (itemKey != null ? itemKey.toString() : "unknown"));
+            ImGui.textUnformatted("Count: " + stack.getCount());
 
             ImGui.separatorText("Components");
 
@@ -121,7 +122,7 @@ public class ItemViewer extends Module {
             snbt = encoded.result().map(Tag::toString).orElse("<encode error>");
         }
 
-        ImGui.textWrapped(snbt);
+        ImGuiUtil.textWrapped(snbt);
 
         if (!transient_) {
             if (isActive()) {
@@ -148,17 +149,17 @@ public class ItemViewer extends Module {
                 String error = errors.get(name);
                 if (error != null) {
                     ImGui.pushStyleColor(ImGuiCol.Text, 1.0f, 0.3f, 0.3f, 1.0f);
-                    ImGui.textWrapped(error);
+                    ImGuiUtil.textWrapped(error);
                     ImGui.popStyleColor();
                 }
             } else {
                 ImGui.pushStyleColor(ImGuiCol.Text, 0.6f, 0.6f, 0.6f, 1.0f);
-                ImGui.text("(enable module to edit)");
+                ImGui.textUnformatted("(enable module to edit)");
                 ImGui.popStyleColor();
             }
         } else {
             ImGui.pushStyleColor(ImGuiCol.Text, 0.6f, 0.6f, 0.6f, 1.0f);
-            ImGui.text("(not editable, transient component)");
+            ImGui.textUnformatted("(not editable, transient component)");
             ImGui.popStyleColor();
         }
 

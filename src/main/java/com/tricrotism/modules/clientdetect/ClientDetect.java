@@ -2,6 +2,7 @@ package com.tricrotism.modules.clientdetect;
 
 import com.tricrotism.SageFang;
 import com.tricrotism.api.eventbus.EventHandler;
+import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameJoinedEvent;
@@ -14,6 +15,7 @@ import com.tricrotism.modules.clientdetect.labymod.protocol.model.ChatMsg;
 import com.tricrotism.modules.clientdetect.labymod.protocol.model.Friend;
 import com.tricrotism.modules.clientdetect.labymod.protocol.model.ServerInfo;
 import com.tricrotism.modules.clientdetect.labymod.protocol.model.UserStatus;
+import com.tricrotism.utils.ImGuiUtil;
 import com.tricrotism.utils.KeybindUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -55,7 +57,7 @@ public class ClientDetect extends Module {
     private ClientDetect() {
         super("clientdetect", "Client Detect",
             "LabyMod detection + friends, chat and status",
-            "Network");
+            Category.NETWORK);
     }
 
     /**
@@ -126,7 +128,7 @@ public class ClientDetect extends Module {
 
             LabySocial social = LabySocial.instance;
             if (!social.isConnected()) {
-                ImGui.textDisabled("Not connected to LabyConnect.");
+                ImGuiUtil.textDisabled("Not connected to LabyConnect.");
                 ImGui.end();
                 return;
             }
@@ -191,7 +193,7 @@ public class ClientDetect extends Module {
         if (requests.isEmpty()) return;
         ImGui.separatorText("Requests (" + requests.size() + ")");
         for (Friend req : requests) {
-            ImGui.text(req.getName());
+            ImGui.textUnformatted(req.getName());
             renderBadge(social.getGroup(req.getUuid()));
             ImGui.sameLine();
             if (ImGui.button("Accept##req_" + req.getUuid())) social.acceptRequest(req);
@@ -202,14 +204,14 @@ public class ClientDetect extends Module {
 
     private void renderFriendList(LabySocial social, List<Friend> friends) {
         if (friends.isEmpty()) {
-            ImGui.textDisabled("No friends.");
+            ImGuiUtil.textDisabled("No friends.");
             return;
         }
         float maxH = ImGui.getTextLineHeightWithSpacing() * MAX_VISIBLE_FRIENDS;
         ImGui.beginChild("##labyFriends", 320, maxH, true, ImGuiWindowFlags.None);
         for (Friend f : friends) {
             float[] c = statusColor(f.getStatus());
-            ImGui.textColored(c[0], c[1], c[2], 1.0f, "●");
+            ImGuiUtil.textColored(c[0], c[1], c[2], 1.0f, "●");
             ImGui.sameLine();
             boolean selected = f.getUuid().equals(openChat);
             if (ImGui.selectable(f.getName() + "##friend_" + f.getUuid(), selected)) {
@@ -221,7 +223,7 @@ public class ClientDetect extends Module {
             ServerInfo server = f.getServer();
             if (server != null && server.isPresent()) {
                 ImGui.sameLine();
-                ImGui.textDisabled("— " + server.getAddress());
+                ImGuiUtil.textDisabled("- " + server.getAddress());
             }
         }
         ImGui.endChild();
@@ -233,7 +235,7 @@ public class ClientDetect extends Module {
             openChat = null;
             return;
         }
-        ImGui.text("Chat with " + friend.getName());
+        ImGui.textUnformatted("Chat with " + friend.getName());
         ImGui.sameLine();
         if (ImGui.smallButton("Close##labyChatClose")) {
             openChat = null;
@@ -244,12 +246,12 @@ public class ClientDetect extends Module {
         ImGui.beginChild("##labyChatHist", 320, histH, true, ImGuiWindowFlags.None);
         for (ChatMsg msg : social.getHistory(openChat)) {
             if (msg.outgoing()) {
-                ImGui.textColored(0.55f, 0.75f, 1.0f, 1.0f, "You: ");
+                ImGuiUtil.textColored(0.55f, 0.75f, 1.0f, 1.0f, "You: ");
             } else {
-                ImGui.textColored(0.6f, 0.85f, 0.45f, 1.0f, friend.getName() + ": ");
+                ImGuiUtil.textColored(0.6f, 0.85f, 0.45f, 1.0f, friend.getName() + ": ");
             }
             ImGui.sameLine();
-            ImGui.textWrapped(msg.text());
+            ImGuiUtil.textWrapped(msg.text());
         }
         if (ImGui.getScrollY() >= ImGui.getScrollMaxY() - 2f) {
             ImGui.setScrollHereY(1f);
@@ -257,7 +259,7 @@ public class ClientDetect extends Module {
         ImGui.endChild();
 
         if (social.isTyping(openChat)) {
-            ImGui.textDisabled(friend.getName() + " is typing…");
+            ImGuiUtil.textDisabled(friend.getName() + " is typing…");
         }
 
         if (refocusChat) {
@@ -307,6 +309,6 @@ public class ClientDetect extends Module {
         if (group == null) return;
         float[] rgb = group.rgb();
         ImGui.sameLine();
-        ImGui.textColored(rgb[0], rgb[1], rgb[2], 1.0f, "[" + group.name() + "]");
+        ImGuiUtil.textColored(rgb[0], rgb[1], rgb[2], 1.0f, "[" + group.name() + "]");
     }
 }

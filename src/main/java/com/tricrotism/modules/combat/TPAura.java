@@ -145,7 +145,7 @@ public final class TPAura extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Hops: " + hops);
-        ImGui.text(String.format("Last hop: %.2f blocks", lastDistance));
+        ImGui.textUnformatted("Hops: " + hops);
+        ImGui.textUnformatted(String.format("Last hop: %.2f blocks", lastDistance));
     }
 }

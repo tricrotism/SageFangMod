@@ -1,5 +1,6 @@
 package com.tricrotism.api.settings;
 
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 
 /**
@@ -16,7 +17,12 @@ public abstract class Setting<T> {
     protected final String key;
     private final String description;
 
-    protected T value;
+    /**
+     * Volatile because the menu writes this on the main thread while packet handlers read it on the
+     * Netty thread and the profiler samplers read it on their own. Without it a setting changed in
+     * the UI may never become visible to the code it configures.
+     */
+    protected volatile T value;
 
     protected Setting(String label, String key, String description) {
         this.label = label;
@@ -26,6 +32,10 @@ public abstract class Setting<T> {
 
     public T get() {
         return value;
+    }
+
+    public String key() {
+        return key;
     }
 
     public void set(T newValue) {
@@ -53,7 +63,7 @@ public abstract class Setting<T> {
 
     protected void tooltip() {
         if (description != null && !description.isEmpty() && ImGui.isItemHovered()) {
-            ImGui.setTooltip(description);
+            ImGuiUtil.setTooltip(description);
         }
     }
 }

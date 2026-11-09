@@ -3,7 +3,7 @@ package com.tricrotism.modules.login;
 import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
-import imgui.ImGui;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGuiIO;
 
 import java.util.UUID;
@@ -49,7 +49,7 @@ public final class LoginHelloSpoof extends Module {
     @Override
     protected void renderExtra(ImGuiIO io) {
         if (!profileId.get().trim().isEmpty() && getSpoofProfileId() == null) {
-            ImGui.textColored(0.9f, 0.3f, 0.3f, 1.0f, "Invalid UUID, original will be used.");
+            ImGuiUtil.textColored(0.9f, 0.3f, 0.3f, 1.0f, "Invalid UUID, original will be used.");
         }
     }
 }

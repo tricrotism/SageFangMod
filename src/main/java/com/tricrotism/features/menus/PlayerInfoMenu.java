@@ -5,6 +5,7 @@ import com.tricrotism.api.menus.Menu;
 import com.tricrotism.config.SageFangConfig;
 import com.tricrotism.utils.GraphHistory;
 import com.tricrotism.utils.GraphRenderer;
+import com.tricrotism.utils.ImGuiUtil;
 import com.tricrotism.utils.NumberUtils;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -14,6 +15,23 @@ import net.minecraft.client.Minecraft;
 
 @Slf4j
 public class PlayerInfoMenu implements Menu {
+
+    private static final long MEMORY_REFRESH_NANOS = 250_000_000L;
+
+    // Each text is rebuilt only when the value it shows changes, never per frame.
+    private int shownFps = -1;
+    private String fpsText = "";
+    private long shownX = Long.MIN_VALUE;
+    private long shownY;
+    private long shownZ;
+    private String xyzFormat = "";
+    private Object shownDimension;
+    private String worldName = "";
+    private long memoryAt;
+    private String memoryText = "";
+    private long shownPackets = -1;
+    private String packetsText = "";
+
     @Override
     public void frame(ImGuiIO io) {
         try {
@@ -30,36 +48,64 @@ public class PlayerInfoMenu implements Menu {
             ImGui.begin("Player Info", flags);
 
             if (Minecraft.getInstance().player != null) {
-                ImGui.text("FPS");
+                ImGui.textUnformatted("FPS");
                 ImGui.sameLine();
-                ImGui.text(String.valueOf(Minecraft.getInstance().getFps()));
+                int fps = Minecraft.getInstance().getFps();
+                if (fps != shownFps) {
+                    shownFps = fps;
+                    fpsText = String.valueOf(fps);
+                }
+                ImGui.textUnformatted(fpsText);
 
-                String xyzFormat = String.format("%.2f, %.2f, %.2f", Math.round(Minecraft.getInstance().player.getX() * 100D) / 100D, Math.round(Minecraft.getInstance().player.getY() * 100D) / 100D, Math.round(Minecraft.getInstance().player.getZ() * 100D) / 100D);
-                ImGui.text("Position");
+                long hundredthsX = Math.round(Minecraft.getInstance().player.getX() * 100D);
+                long hundredthsY = Math.round(Minecraft.getInstance().player.getY() * 100D);
+                long hundredthsZ = Math.round(Minecraft.getInstance().player.getZ() * 100D);
+                if (hundredthsX != shownX || hundredthsY != shownY || hundredthsZ != shownZ) {
+                    shownX = hundredthsX;
+                    shownY = hundredthsY;
+                    shownZ = hundredthsZ;
+                    xyzFormat = String.format("%.2f, %.2f, %.2f", hundredthsX / 100D, hundredthsY / 100D, hundredthsZ / 100D);
+                }
+                ImGui.textUnformatted("Position");
                 ImGui.sameLine();
-                ImGui.text(xyzFormat);
+                ImGui.textUnformatted(xyzFormat);
                 if (ImGui.isItemHovered()) {
-                    ImGui.setTooltip("Click to copy");
+                    ImGuiUtil.setTooltip("Click to copy");
                 }
                 if (ImGui.isItemClicked()) {
                     ImGui.setClipboardText(xyzFormat);
                     log.info("Copied position to clipboard: {}", xyzFormat);
                 }
 
-                String worldName = Minecraft.getInstance().player.level().dimension().identifier().toString().split(":")[1];
-                ImGui.text("World");
+                var dimension = Minecraft.getInstance().player.level().dimension();
+                if (dimension != shownDimension) {
+                    shownDimension = dimension;
+                    worldName = dimension.identifier().getPath();
+                }
+                ImGui.textUnformatted("World");
                 ImGui.sameLine();
-                ImGui.text(worldName);
+                ImGui.textUnformatted(worldName);
 
+                // Used memory moves with every allocation, so the text refreshes on a timer instead.
                 long memoryUsed = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-                long memoryMax = Runtime.getRuntime().maxMemory();
-                ImGui.text("Memory");
+                long now = System.nanoTime();
+                if (now - memoryAt >= MEMORY_REFRESH_NANOS) {
+                    memoryAt = now;
+                    long memoryMax = Runtime.getRuntime().maxMemory();
+                    memoryText = NumberUtils.formatMemorySize(memoryUsed) + "/" + NumberUtils.formatMemorySize(memoryMax);
+                }
+                ImGui.textUnformatted("Memory");
                 ImGui.sameLine();
-                ImGui.text(NumberUtils.formatMemorySize(memoryUsed) + "/" + NumberUtils.formatMemorySize(memoryMax));
+                ImGui.textUnformatted(memoryText);
 
-                ImGui.text("Packets/s");
+                long packets = Math.round(Minecraft.getInstance().player.connection.getConnection().getAverageReceivedPackets());
+                if (packets != shownPackets) {
+                    shownPackets = packets;
+                    packetsText = String.valueOf(packets);
+                }
+                ImGui.textUnformatted("Packets/s");
                 ImGui.sameLine();
-                ImGui.text(String.valueOf(Math.round(Minecraft.getInstance().player.connection.getConnection().getAverageReceivedPackets())));
+                ImGui.textUnformatted(packetsText);
 
                 if (!Minecraft.getInstance().hasSingleplayerServer()) {
                     var remoteAddress = Minecraft.getInstance().player.connection.getConnection().getRemoteAddress().toString();
@@ -68,30 +114,30 @@ public class PlayerInfoMenu implements Menu {
                         var protocol = serverData.protocol;
                         var brand = Minecraft.getInstance().player.connection.serverBrand();
 
-                        ImGui.text("IP");
+                        ImGui.textUnformatted("IP");
                         ImGui.sameLine();
-                        ImGui.text(remoteAddress.split("/")[0]);
+                        ImGui.textUnformatted(remoteAddress.split("/")[0]);
 
-                        ImGui.text("Address");
+                        ImGui.textUnformatted("Address");
                         ImGui.sameLine();
-                        ImGui.text(remoteAddress.split("/")[1]);
+                        ImGui.textUnformatted(remoteAddress.split("/")[1]);
 
-                        ImGui.text("Protocol");
+                        ImGui.textUnformatted("Protocol");
                         ImGui.sameLine();
-                        ImGui.text(String.valueOf(protocol));
+                        ImGui.textUnformatted(String.valueOf(protocol));
 
-                        ImGui.text("Brand");
+                        ImGui.textUnformatted("Brand");
                         ImGui.sameLine();
-                        ImGui.text(String.valueOf(brand));
+                        ImGui.textUnformatted(String.valueOf(brand));
 
                         var detect = com.tricrotism.modules.clientdetect.ClientDetect.instance;
                         int totalPlayers = Minecraft.getInstance().getConnection() != null ? Minecraft.getInstance().getConnection().getOnlinePlayers().size() : 0;
                         if (detect.isActive()) {
                             int labyCount = detect.getLabyModUserCount();
                             if (labyCount > 0 || detect.isLabyModConnected()) {
-                                ImGui.text("LabyMod");
+                                ImGui.textUnformatted("LabyMod");
                                 ImGui.sameLine();
-                                ImGui.text(totalPlayers > 0 ? labyCount + "/" + totalPlayers + " (" + (int) Math.round(100.0 * labyCount / totalPlayers) + "%)" : labyCount + " users");
+                                ImGui.textUnformatted(totalPlayers > 0 ? labyCount + "/" + totalPlayers + " (" + (int) Math.round(100.0 * labyCount / totalPlayers) + "%)" : labyCount + " users");
                             }
                         }
                     }
@@ -147,7 +193,7 @@ public class PlayerInfoMenu implements Menu {
                     }
                 }
             } else {
-                ImGui.text("Not in world");
+                ImGui.textUnformatted("Not in world");
             }
 
             ImGui.end();

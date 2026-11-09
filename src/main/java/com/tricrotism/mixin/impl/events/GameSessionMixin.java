@@ -44,6 +44,13 @@ public abstract class GameSessionMixin extends ClientCommonPacketListenerImpl {
         SageFang.EVENT_BUS.post(GameJoinedEvent.get());
     }
 
+    // Only Minecraft.disconnect calls this, on the render thread, and kicks and client-side
+    // disconnects both go through it. onDisconnect missed the pause menu and connection.disconnect.
+    @Inject(method = "close", at = @At("HEAD"))
+    private void onClose(CallbackInfo info) {
+        SageFang.EVENT_BUS.post(GameQuitEvent.get());
+    }
+
     @Inject(method = "handleConfigurationStart", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/PacketUtils;ensureRunningOnSameThread(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;Lnet/minecraft/network/PacketProcessor;)V", shift = At.Shift.AFTER))
     private void onConfigurationStart(ClientboundStartConfigurationPacket packet, CallbackInfo info) {
         SageFang.EVENT_BUS.post(GameQuitEvent.get());

@@ -7,6 +7,7 @@ import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.mixin.accessors.ConnectionAccessor;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
@@ -131,7 +132,7 @@ public class KickCrash extends Module {
                 packetCount.set(countArr[0]);
             }
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Container-click packets sent before and after the kick packet");
+                ImGuiUtil.setTooltip("Container-click packets sent before and after the kick packet");
             }
 
             ImGui.separator();
@@ -140,14 +141,14 @@ public class KickCrash extends Module {
                 doKick();
             }
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Lag burst + malformed kick packet to force a server disconnect");
+                ImGuiUtil.setTooltip("Lag burst + malformed kick packet to force a server disconnect");
             }
 
             if (ImGui.button("Disconnect##kcDisconnect")) {
                 doDisconnect();
             }
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Cleanly close the connection");
+                ImGuiUtil.setTooltip("Cleanly close the connection");
             }
 
             ImGui.end();

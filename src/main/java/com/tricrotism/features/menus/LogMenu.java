@@ -1,6 +1,7 @@
 package com.tricrotism.features.menus;
 
 import com.tricrotism.api.menus.Menu;
+import com.tricrotism.utils.ImGuiUtil;
 import com.tricrotism.utils.SFLog;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -32,14 +33,14 @@ public class LogMenu implements Menu {
             SFLog.setChatOutput(!chat);
         }
         if (ImGui.isItemHovered()) {
-            ImGui.setTooltip("Off: module messages appear only in this window.");
+            ImGuiUtil.setTooltip("Off: module messages appear only in this window.");
         }
         ImGui.sameLine();
         if (ImGui.button("Clear##sfLogClear")) SFLog.clear();
 
         ImGui.separator();
         ImGui.beginChild("##sfLogEntries", 560, 260, true);
-        for (String line : SFLog.entries()) ImGui.textWrapped(line);
+        for (String line : SFLog.entries()) ImGuiUtil.textWrapped(line);
         if (ImGui.getScrollY() >= ImGui.getScrollMaxY() - 2f) ImGui.setScrollHereY(1f);
         ImGui.endChild();
 

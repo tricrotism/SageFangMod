@@ -6,8 +6,8 @@ import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameJoinedEvent;
 import com.tricrotism.events.world.TickEvent;
+import com.tricrotism.utils.ImGuiUtil;
 import com.tricrotism.utils.SFLog;
-import imgui.ImGui;
 import imgui.ImGuiIO;
 import net.minecraft.client.gui.screens.DeathScreen;
 
@@ -66,6 +66,6 @@ public final class DeathBypass extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        if (ghosting) ImGui.textDisabled("Currently ghosting");
+        if (ghosting) ImGuiUtil.textDisabled("Currently ghosting");
     }
 }

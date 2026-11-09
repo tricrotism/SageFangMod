@@ -24,4 +24,17 @@ public class EntityMoveEvent {
         INSTANCE.movement = movement;
         return INSTANCE;
     }
+
+    /**
+     * Drops the pooled references once the post has returned.
+     * <p>
+     * Without this the singleton keeps the last entity that moved, and an entity keeps its level, so
+     * disconnecting pins the whole dead {@code ClientLevel} and everything in it for as long as the
+     * client sits on the menu. Handlers rewrite the delta in place rather than replacing it, so
+     * clearing the field here loses nothing the caller still needs.
+     */
+    public static void release() {
+        INSTANCE.entity = null;
+        INSTANCE.movement = null;
+    }
 }

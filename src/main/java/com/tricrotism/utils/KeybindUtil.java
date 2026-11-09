@@ -103,7 +103,7 @@ public final class KeybindUtil {
             return START_LISTENING;
         }
         ImGui.sameLine();
-        ImGui.text(label);
+        ImGui.textUnformatted(label);
 
         if (awaiting) {
             return scanForKeyPress();

@@ -8,6 +8,7 @@ import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.mixin.accessors.ConnectionAccessor;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
@@ -146,14 +147,14 @@ public class PositionCrash extends Module {
                 useRawChannel.set(!raw);
             }
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Use raw Netty channel for higher throughput");
+                ImGuiUtil.setTooltip("Use raw Netty channel for higher throughput");
             }
 
             ImGui.separator();
 
             // Current mode description
             String desc = mode.option();
-            ImGui.text("Active: " + desc);
+            ImGui.textUnformatted("Active: " + desc);
 
             ImGui.end();
         } catch (Exception e) {

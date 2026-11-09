@@ -85,14 +85,14 @@ public final class InputRecorder extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Intervals: " + intervals.size());
+        ImGui.textUnformatted("Intervals: " + intervals.size());
         if (intervals.size() < 2) {
-            ImGui.text("Click to record...");
+            ImGui.textUnformatted("Click to record...");
             return;
         }
 
         double mean = InputTrace.mean(intervals);
-        ImGui.text(String.format("Mean: %.1f ms (%.1f CPS)", mean, 1000.0 / mean));
-        ImGui.text(String.format("Deviation: %.2f ms", InputTrace.deviation(intervals)));
+        ImGui.textUnformatted(String.format("Mean: %.1f ms (%.1f CPS)", mean, 1000.0 / mean));
+        ImGui.textUnformatted(String.format("Deviation: %.2f ms", InputTrace.deviation(intervals)));
     }
 }

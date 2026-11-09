@@ -118,6 +118,6 @@ public final class AmethystESP extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Found: " + results.size());
+        ImGui.textUnformatted("Found: " + results.size());
     }
 }

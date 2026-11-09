@@ -4,6 +4,7 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.api.testing.TestLog;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 
@@ -64,10 +65,10 @@ public final class Timer extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Ticks: " + scaledTicks + " sent / " + realTicks + " real");
+        ImGui.textUnformatted("Ticks: " + scaledTicks + " sent / " + realTicks + " real");
         if (realTicks > 0) {
-            ImGui.text(String.format("Effective: %.3fx", scaledTicks / (double) realTicks));
+            ImGui.textUnformatted(String.format("Effective: %.3fx", scaledTicks / (double) realTicks));
         }
-        ImGui.textDisabled("Alternate around 1.0 to probe budget clamping.");
+        ImGuiUtil.textDisabled("Alternate around 1.0 to probe budget clamping.");
     }
 }

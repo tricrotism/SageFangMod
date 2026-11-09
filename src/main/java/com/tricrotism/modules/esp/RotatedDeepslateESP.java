@@ -13,15 +13,14 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
+import java.util.*;
 
 /**
  * Highlights deepslate (and its variants) whose pillar axis is horizontal, meaning
@@ -46,10 +45,6 @@ public final class RotatedDeepslateESP extends Module {
     private final Settings.Int scanInterval =
         integer("Scan Interval", "scanInterval", "Ticks between rescans", 20, 5, 100);
 
-    private static final Predicate<BlockState> ANY_DEEPSLATE = s ->
-        s.is(Blocks.DEEPSLATE) || s.is(Blocks.POLISHED_DEEPSLATE) || s.is(Blocks.DEEPSLATE_BRICKS)
-            || s.is(Blocks.DEEPSLATE_TILES) || s.is(Blocks.CHISELED_DEEPSLATE);
-
 
     private int scanCounter;
     private volatile List<BlockPos> results = List.of();
@@ -72,25 +67,49 @@ public final class RotatedDeepslateESP extends Module {
         results = List.of();
     }
 
-    private boolean isTarget(BlockState s) {
-        if (!s.hasProperty(BlockStateProperties.AXIS)) return false;
-        if (s.getValue(BlockStateProperties.AXIS) == Direction.Axis.Y) return false;
-        if (includeRegular.get() && s.is(Blocks.DEEPSLATE)) return true;
-        if (includePolished.get() && s.is(Blocks.POLISHED_DEEPSLATE)) return true;
-        if (includeBricks.get() && s.is(Blocks.DEEPSLATE_BRICKS)) return true;
-        if (includeTiles.get() && s.is(Blocks.DEEPSLATE_TILES)) return true;
-        return includeChiseled.get() && s.is(Blocks.CHISELED_DEEPSLATE);
+    /**
+     * The exact states worth flagging: horizontal-axis states of the included blocks. Testing the
+     * palette against these rather than against any deepslate skips every section of natural,
+     * Y-axis deepslate, which is most of the world below Y 0, without visiting a block of it.
+     */
+    private Set<BlockState> targets() {
+        Set<BlockState> states = Collections.newSetFromMap(new IdentityHashMap<>());
+        addHorizontal(states, includeRegular.get(), Blocks.DEEPSLATE);
+        addHorizontal(states, includePolished.get(), Blocks.POLISHED_DEEPSLATE);
+        addHorizontal(states, includeBricks.get(), Blocks.DEEPSLATE_BRICKS);
+        addHorizontal(states, includeTiles.get(), Blocks.DEEPSLATE_TILES);
+        addHorizontal(states, includeChiseled.get(), Blocks.CHISELED_DEEPSLATE);
+        return states;
+    }
+
+    private static void addHorizontal(Set<BlockState> states, boolean include, Block block) {
+        if (!include) return;
+        for (BlockState state : block.getStateDefinition().getPossibleStates()) {
+            if (state.hasProperty(BlockStateProperties.AXIS)
+                && state.getValue(BlockStateProperties.AXIS) != Direction.Axis.Y) {
+                states.add(state);
+            }
+        }
     }
 
     private void scan() {
         if (mc.player == null || mc.level == null) return;
 
+        Set<BlockState> targets = targets();
+        if (targets.isEmpty()) {
+            results = List.of();
+            return;
+        }
+
         ChunkPos pc = mc.player.chunkPosition();
         int levelMinY = mc.level.getMinY();
+        int radius = chunkRadius.get();
+        int lowY = minY.get();
+        int highY = maxY.get();
         List<BlockPos> found = new ArrayList<>();
 
-        for (int cx = pc.x() - chunkRadius.get(); cx <= pc.x() + chunkRadius.get(); cx++) {
-            for (int cz = pc.z() - chunkRadius.get(); cz <= pc.z() + chunkRadius.get(); cz++) {
+        for (int cx = pc.x() - radius; cx <= pc.x() + radius; cx++) {
+            for (int cz = pc.z() - radius; cz <= pc.z() + radius; cz++) {
                 if (!mc.level.hasChunk(cx, cz)) continue;
                 LevelChunk chunk = mc.level.getChunk(cx, cz);
                 LevelChunkSection[] sections = chunk.getSections();
@@ -99,16 +118,16 @@ public final class RotatedDeepslateESP extends Module {
 
                 for (int i = 0; i < sections.length; i++) {
                     LevelChunkSection section = sections[i];
-                    if (section.hasOnlyAir() || !section.maybeHas(ANY_DEEPSLATE)) continue;
+                    if (section.hasOnlyAir() || !section.maybeHas(targets::contains)) continue;
                     int sectionBaseY = levelMinY + i * 16;
-                    if (sectionBaseY + 15 < minY.get() || sectionBaseY > maxY.get()) continue;
+                    if (sectionBaseY + 15 < lowY || sectionBaseY > highY) continue;
 
                     for (int x = 0; x < 16; x++) {
                         for (int z = 0; z < 16; z++) {
                             for (int y = 0; y < 16; y++) {
                                 int worldY = sectionBaseY + y;
-                                if (worldY < minY.get() || worldY > maxY.get()) continue;
-                                if (isTarget(section.getBlockState(x, y, z))) {
+                                if (worldY < lowY || worldY > highY) continue;
+                                if (targets.contains(section.getBlockState(x, y, z))) {
                                     found.add(new BlockPos(baseX + x, worldY, baseZ + z));
                                 }
                             }
@@ -134,6 +153,6 @@ public final class RotatedDeepslateESP extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Found: " + results.size());
+        ImGui.textUnformatted("Found: " + results.size());
     }
 }

@@ -5,6 +5,7 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
+import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.utils.EspRenderUtils;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -37,6 +38,9 @@ public final class LightUpdateESP extends Module {
 
     private final Map<Long, Long> updates = new ConcurrentHashMap<>();
 
+    // built on the tick, read by the draw call, swapped whole rather than mutated
+    private volatile List<double[]> boxes = List.of();
+
     private LightUpdateESP() {
         super("lightupdateesp", "Light Update ESP", "Highlight chunks that receive server light updates.", Category.RENDER);
         LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(this::render);
@@ -53,41 +57,68 @@ public final class LightUpdateESP extends Module {
     @EventHandler
     private void onGameQuit(GameQuitEvent event) {
         updates.clear();
+        boxes = List.of();
     }
 
     @Override
     public void onDeactivate() {
         updates.clear();
+        boxes = List.of();
     }
 
-    private void render(LevelRenderContext context) {
-        if (!isActive() || updates.isEmpty()) return;
+    /**
+     * Expiry and the exclusion filter run here, once a tick, and publish the list the draw call
+     * reads. Doing it in {@code render} meant sweeping the map, allocating a list and testing every
+     * chunk against the player at frame rate, for a set that only changes when a light packet
+     * arrives. The fade is over seconds, so a tick of granularity is invisible.
+     */
+    @EventHandler
+    private void onTick(TickEvent.Post event) {
+        if (!isActive()) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) return;
+        if (mc.player == null || mc.level == null) {
+            boxes = List.of();
+            return;
+        }
 
         long now = System.currentTimeMillis();
         long maxAgeMs = maxAgeSeconds.get() * 1000L;
         updates.values().removeIf(t -> now - t > maxAgeMs);
-        if (updates.isEmpty()) return;
 
+        if (updates.isEmpty()) {
+            boxes = List.of();
+            return;
+        }
+
+        int exclusion = exclusionChunks.get();
         ChunkPos playerChunk = mc.player.chunkPosition();
-        double y0 = mc.level.getMinY();
-        double y1 = mc.level.getMinY() + mc.level.getHeight();
+        List<double[]> built = new ArrayList<>(updates.size());
 
-        List<double[]> boxes = new ArrayList<>(updates.size());
         for (Map.Entry<Long, Long> e : updates.entrySet()) {
             int cx = ChunkPos.getX(e.getKey());
             int cz = ChunkPos.getZ(e.getKey());
-            if (Math.abs(cx - playerChunk.x()) <= exclusionChunks.get() && Math.abs(cz - playerChunk.z()) <= exclusionChunks.get()) {
+            if (Math.abs(cx - playerChunk.x()) <= exclusion && Math.abs(cz - playerChunk.z()) <= exclusion) {
                 continue;
             }
-            boxes.add(new double[]{cx << 4, cz << 4, Math.min(1f, (now - e.getValue()) / (float) maxAgeMs)});
+            built.add(new double[]{cx << 4, cz << 4, Math.min(1f, (now - e.getValue()) / (float) maxAgeMs)});
         }
-        if (boxes.isEmpty()) return;
+
+        boxes = List.copyOf(built);
+    }
+
+    private void render(LevelRenderContext context) {
+        List<double[]> snapshot = boxes;
+        if (!isActive() || snapshot.isEmpty()) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+
+        double y0 = mc.level.getMinY();
+        double y1 = mc.level.getMinY() + mc.level.getHeight();
 
         EspRenderUtils.submitBoxes(context, sink -> {
-            for (double[] box : boxes) {
+            for (double[] box : snapshot) {
                 float age = (float) box[2];
                 sink.box(box[0], y0, box[1], box[0] + 16, y1, box[1] + 16, age, 1f - age, 0.15f, 0.6f, 2.0f);
             }
@@ -96,6 +127,6 @@ public final class LightUpdateESP extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Chunks: " + updates.size());
+        ImGui.textUnformatted("Chunks: " + updates.size());
     }
 }

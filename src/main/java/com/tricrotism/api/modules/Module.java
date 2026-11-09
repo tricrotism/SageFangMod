@@ -3,6 +3,7 @@ package com.tricrotism.api.modules;
 import com.tricrotism.api.menus.Menu;
 import com.tricrotism.api.settings.Setting;
 import com.tricrotism.api.settings.Settings;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
@@ -16,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Base class for all SageFang modules. Each module has a unique id, display title, description, and
@@ -46,8 +46,9 @@ public abstract class Module implements Menu, Comparable<Module> {
 
     private final List<Setting<?>> settings = new ArrayList<>();
 
+    // Read from the network thread by packet hooks.
     @Getter
-    private boolean active;
+    private volatile boolean active;
 
     @Getter
     private boolean visible;
@@ -65,35 +66,56 @@ public abstract class Module implements Menu, Comparable<Module> {
     }
 
     /**
-     * Retained so the modules still carrying a category string keep compiling while they migrate.
-     * Unknown names fall back to {@link Category#UTILITY} rather than failing at class-init, which
-     * would take the whole mod down for a typo in one module.
-     */
-    protected Module(String id, String title, String description, String legacyCategory) {
-        this(id, title, description, mapLegacy(legacyCategory));
-    }
-
-    private static Category mapLegacy(String name) {
-        return switch (name.toLowerCase(Locale.ROOT)) {
-            case "combat" -> Category.COMBAT;
-            case "esp", "visual", "render" -> Category.RENDER;
-            case "world" -> Category.WORLD;
-            case "network" -> Category.NETWORK;
-            case "exploit" -> Category.EXPLOIT;
-            case "logger", "logging" -> Category.LOGGING;
-            case "chat", "utility" -> Category.UTILITY;
-            default -> {
-                log.warn("Unknown module category '{}', filing under Utility", name);
-                yield Category.UTILITY;
-            }
-        };
-    }
-
-    /**
      * Returns an unmodifiable view of all constructed modules, in creation order.
      */
     public static List<Module> getRegistry() {
         return Collections.unmodifiableList(REGISTRY);
+    }
+
+    /**
+     * Runs {@link #onActivate()} for every module the config says was left on.
+     * <p>
+     * The constructor restores {@code active} from config, so every {@code isActive()} guard in a
+     * restored module already passes on the first tick. Nothing ran the activation side effects that
+     * belong with it, which leaves the module half on: its handlers fire while the scheduler, sampler
+     * thread or captured state they depend on was never created, and the first toggle off then runs
+     * {@link #onDeactivate()} against state that was never acquired.
+     * <p>
+     * A module that throws on the way up is switched off rather than left in that state, since the
+     * alternative is the same half-on module with a stack trace in front of it.
+     */
+    public static void restoreActive() {
+        for (Module module : REGISTRY) {
+            if (!module.active) continue;
+
+            try {
+                module.onActivate();
+            } catch (RuntimeException e) {
+                log.error("Module '{}' failed to restore and has been switched off", module.id, e);
+                module.active = false;
+                Config.setProperty(module.baseConfig + ".enabled", "false");
+            }
+        }
+    }
+
+    /**
+     * Runs {@link #onDeactivate()} for every active module, for client shutdown.
+     * <p>
+     * Without this the process exits with sampler threads unjoined, profiles unwritten and the mining
+     * abort packet unsent, because {@code toggle()} was the only path that ever reached teardown.
+     * Failures are logged and the sweep continues: one module refusing to stop must not keep the
+     * others from doing it.
+     */
+    public static void shutdownAll() {
+        for (Module module : REGISTRY) {
+            if (!module.active) continue;
+
+            try {
+                module.onDeactivate();
+            } catch (RuntimeException e) {
+                log.error("Module '{}' failed to shut down cleanly", module.id, e);
+            }
+        }
     }
 
     public List<Setting<?>> getSettings() {
@@ -166,7 +188,7 @@ public abstract class Module implements Menu, Comparable<Module> {
         ImGui.begin(title, ImGuiWindowFlags.AlwaysAutoResize);
 
         if (ImGui.checkbox("Enabled##" + id, active)) toggle();
-        if (!description.isEmpty() && ImGui.isItemHovered()) ImGui.setTooltip(description);
+        if (!description.isEmpty() && ImGui.isItemHovered()) ImGuiUtil.setTooltip(description);
 
         for (Setting<?> setting : settings) {
             setting.render();

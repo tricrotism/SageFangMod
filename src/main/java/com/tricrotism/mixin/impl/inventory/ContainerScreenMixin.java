@@ -1,9 +1,11 @@
 package com.tricrotism.mixin.impl.inventory;
 
 import com.tricrotism.config.SageFangConfig;
+import com.tricrotism.modules.inventory.ContainerTools;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -18,6 +20,11 @@ public class ContainerScreenMixin {
 
     @Unique
     private static final float SCALE = 0.75f;
+
+    @Inject(method = "slotClicked", at = @At("HEAD"))
+    private void sagefang$recordClick(Slot slot, int slotId, int button, ContainerInput input, CallbackInfo ci) {
+        ContainerTools.instance.onSlotClicked(slotId, button, input);
+    }
 
     @Inject(method = "extractSlot", at = @At("TAIL"))
     private void onRenderSlot(GuiGraphicsExtractor context, Slot slot, int offsetX, int offsetY, CallbackInfo ci) {

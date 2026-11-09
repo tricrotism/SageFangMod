@@ -164,7 +164,7 @@ public class Zoom extends Module {
     protected void renderExtra(ImGuiIO io) {
         if (isActive() && zoomEngaged) {
             float effectiveDistance = baseZoomDistance.get().floatValue() + scrollOffset;
-            ImGui.text(String.format("Zoom: %.1fx (FOV mult: %.3f)", effectiveDistance, currentFovMultiplier));
+            ImGui.textUnformatted(String.format("Zoom: %.1fx (FOV mult: %.3f)", effectiveDistance, currentFovMultiplier));
         }
         baseZoomDistance.render();
         keybind.render();

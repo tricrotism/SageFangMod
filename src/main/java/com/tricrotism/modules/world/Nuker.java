@@ -151,7 +151,7 @@ public final class Nuker extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Digs: " + digs);
-        ImGui.text("In range: " + candidates.size());
+        ImGui.textUnformatted("Digs: " + digs);
+        ImGui.textUnformatted("In range: " + candidates.size());
     }
 }

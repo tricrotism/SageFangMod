@@ -9,16 +9,16 @@ import com.tricrotism.modules.combat.Velocity;
 import com.tricrotism.modules.esp.*;
 import com.tricrotism.modules.exploit.*;
 import com.tricrotism.modules.freecam.Freecam;
+import com.tricrotism.modules.inventory.ContainerTools;
 import com.tricrotism.modules.latency.ForgedAck;
 import com.tricrotism.modules.latency.PingSpoof;
-import com.tricrotism.modules.logger.ChannelLogger;
-import com.tricrotism.modules.logger.PayloadLogger;
-import com.tricrotism.modules.logger.TeamDetector;
+import com.tricrotism.modules.logger.*;
 import com.tricrotism.modules.misc.ConnectionCut;
 import com.tricrotism.modules.misc.GameStateBypass;
 import com.tricrotism.modules.misc.S2CPacketDelayer;
 import com.tricrotism.modules.packets.PacketManager;
 import com.tricrotism.modules.packets.UIPacketDelay;
+import com.tricrotism.modules.testing.CorrectionLog;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.network.Connection;
@@ -43,6 +43,11 @@ public class ConnectionMixin {
         }
 
         if (ConnectionCut.instance.isActive()) {
+            ci.cancel();
+            return;
+        }
+
+        if (StreamGap.instance.shouldCancel(packet)) {
             ci.cancel();
             return;
         }
@@ -78,8 +83,6 @@ public class ConnectionMixin {
 
         SuperKnockback.instance.onOutbound(packet);
 
-        PayloadLogger.instance.onOutbound(packet);
-
         if (GrimEntityBlink.instance.captureOutbound(packet)) {
             ci.cancel();
             return;
@@ -111,7 +114,14 @@ public class ConnectionMixin {
         if (!SageFangConfig.isShouldEditSign() && (packet instanceof ServerboundSignUpdatePacket)) {
             SageFangConfig.setShouldEditSign(true);
             ci.cancel();
+            return;
         }
+
+        // Observers last, so they only see packets that actually leave. Held ones pass through again on flush.
+        PayloadLogger.instance.onOutbound(packet);
+        ContainerTools.instance.onOutbound(packet);
+        VanishDetect.instance.onOutbound(packet);
+        CorrectionLog.instance.onOutbound(packet);
     }
 
     @Inject(at = @At("HEAD"), method = "channelRead0(Lio/netty/channel/ChannelHandlerContext;Lnet/minecraft/network/protocol/Packet;)V", cancellable = true)
@@ -165,7 +175,12 @@ public class ConnectionMixin {
             TeamDetector.instance.onTeamPacket(teamPacket);
         }
         PayloadLogger.instance.onInbound(packet);
+        ContainerTools.instance.onInbound(packet);
         ChannelLogger.instance.onInbound(packet);
+        VanishDetect.instance.onInbound(packet);
+        ProbeDetect.instance.onInbound(packet);
+        ServerPulse.instance.onInbound(packet);
+        CorrectionLog.instance.onInbound(packet);
 
         PacketManager.instance.observeInbound(packet);
         if (packet instanceof ClientboundCommandSuggestionsPacket suggestions) {

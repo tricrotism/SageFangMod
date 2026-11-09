@@ -5,12 +5,19 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.testing.TestLog;
 import com.tricrotism.events.world.TickEvent;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.block.*;
+import net.minecraft.world.entity.monster.Shulker;
+import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+
+import java.util.List;
 
 /**
  * Says, live, which movement checks currently cannot judge this player.
@@ -22,16 +29,17 @@ import net.minecraft.world.level.block.state.BlockState;
  * and has to be inferred from the absence of an alert, which is not evidence of anything.
  * <p>
  * Each line mirrors a refusal in the server's own logic and is computed from the client's view of
- * the world:
+ * the world, over the 0.6 by 1.8 box the server tests movement with:
  * <ul>
  *   <li><b>Unloaded chunk</b>: a check rebuilding the world contributes no collision for chunks it
  *       never received, so it abstains rather than reading unknown space as air.</li>
- *   <li><b>Entity support</b>: anything the player could be standing on rather than in is outside
- *       the block model, so a nearby entity abandons the ground question. Computed from the real
- *       box, which is the server's common case; where the server cannot identify an entity it
- *       assumes a 2x2 one instead, and the reach is then far wider than shown here.</li>
- *   <li><b>Approximated shape</b>: stairs, fences, walls, panes and doors are modelled as cubes,
- *       which is safe for a support test and wrong for a penetration one.</li>
+ *   <li><b>Entity support</b>: standing on top of a boat or shulker is outside the block model, so
+ *       the server skips the ground check. Mobs, players and items don't count. When the server
+ *       can't identify an entity it assumes a 2x2 one of any type, which reaches much further than
+ *       what this line shows.</li>
+ *   <li><b>Approximated shape</b>: the server treats fences, walls, panes, beds, cauldrons and the
+ *       rest of its list as full cubes. That's safe for a support test and wrong for a penetration
+ *       test. Stairs and doors get exact shapes and don't count.</li>
  * </ul>
  * <p>
  * <b>An approximation, and deliberately so.</b> This is the client's view, not the server's: it
@@ -55,6 +63,23 @@ public final class RefusalMonitor extends Module {
      */
     private static final double UNKNOWN_WIDTH = 2.0;
     private static final double UNKNOWN_HEIGHT = 2.0;
+
+    /**
+     * The server checks movement against a 0.6 by 1.8 box, whatever pose the player is in.
+     */
+    private static final double WIDTH = 0.6;
+    private static final double HEIGHT = 1.8;
+
+    /**
+     * Block name suffixes the server treats as full cubes when the block has collision. Copied from
+     * Whiteout's {@code BlockShapes.APPROXIMATED}, so update both together.
+     */
+    private static final List<String> APPROXIMATED = List.of(
+        "_fence", "_fence_gate", "_wall", "_pane", "_bars",
+        "_bed", "cauldron", "composter", "hopper", "anvil",
+        "_sign", "scaffolding", "lantern", "end_rod", "chain", "conduit",
+        "brewing_stand", "enchanting_table", "grindstone", "stonecutter", "lectern",
+        "bell", "_pot", "cake", "turtle_egg", "_amethyst_bud", "amethyst_cluster");
 
     private boolean unloadedChunk;
     private boolean entitySupport;
@@ -83,19 +108,24 @@ public final class RefusalMonitor extends Module {
     private void onTick(TickEvent.Pre event) {
         if (!isActive() || mc.player == null || mc.level == null) return;
 
-        boolean wasRefused = anyRefusal();
+        int previousReasons = reasons();
 
-        unloadedChunk = !chunkLoadedAround();
+        double x = mc.player.getX();
+        double y = mc.player.getY();
+        double z = mc.player.getZ();
+        AABB box = new AABB(x - WIDTH / 2, y, z - WIDTH / 2, x + WIDTH / 2, y + HEIGHT, z + WIDTH / 2);
+
+        unloadedChunk = !fullyKnown(box);
         unknownBoxOnly = false;
-        entitySupport = findSupportingEntity();
-        approximatedShape = touchingApproximatedShape();
+        entitySupport = findSupportingEntity(x, y, z);
+        approximatedShape = touchingApproximatedShape(box);
 
         boolean refused = anyRefusal();
         if (refused) refusedTicks++;
 
-        // Only the transitions, since the state holds for long stretches and a line per tick would
-        // bury the moment it changed.
-        if (refused != wasRefused) {
+        // Log changes only. The state holds for long stretches, and a line per tick would bury the
+        // moment it flipped. A new reason counts as a change, or the logged reasons go stale.
+        if (reasons() != previousReasons) {
             TestLog.event("refusal_change",
                 "refused", refused,
                 "unloadedChunk", unloadedChunk,
@@ -109,89 +139,100 @@ public final class RefusalMonitor extends Module {
         return unloadedChunk || entitySupport || approximatedShape;
     }
 
-    private boolean chunkLoadedAround() {
-        BlockPos feet = mc.player.blockPosition();
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                BlockPos probe = feet.offset(dx, 0, dz);
-                if (!mc.level.hasChunk(probe.getX() >> 4, probe.getZ() >> 4)) return false;
+    private int reasons() {
+        return (unloadedChunk ? 1 : 0) | (entitySupport ? 2 : 0) | (approximatedShape ? 4 : 0);
+    }
+
+    private boolean fullyKnown(AABB box) {
+        int maxX = Mth.floor(box.maxX) >> 4;
+        int maxZ = Mth.floor(box.maxZ) >> 4;
+        for (int cx = Mth.floor(box.minX) >> 4; cx <= maxX; cx++) {
+            for (int cz = Mth.floor(box.minZ) >> 4; cz <= maxZ; cz++) {
+                if (!mc.level.hasChunk(cx, cz)) return false;
             }
         }
         return true;
     }
 
-    private boolean findSupportingEntity() {
-        double x = mc.player.getX();
-        double y = mc.player.getY();
-        double z = mc.player.getZ();
+    private boolean findSupportingEntity(double x, double y, double z) {
+        double reach = UNKNOWN_WIDTH / 2.0 + SUPPORT_MARGIN;
+        AABB area = new AABB(x - reach, y - UNKNOWN_HEIGHT - SUPPORT_MARGIN, z - reach,
+            x + reach, y + SUPPORT_MARGIN, z + reach);
 
-        for (Entity entity : mc.level.entitiesForRendering()) {
-            if (entity == mc.player || entity.isRemoved()) continue;
+        for (Entity entity : mc.level.getEntities(mc.player, area)) {
+            if (entity.isRemoved()) continue;
 
-            if (!within(entity, x, y, z, entity.getBbWidth(), entity.getBbHeight())) {
-                // The wider envelope the server falls back to when it cannot identify the entity.
-                // Reported separately rather than folded in, because assuming the fallback always
-                // applies would claim a refusal that usually is not there.
-                if (within(entity, x, y, z, UNKNOWN_WIDTH, UNKNOWN_HEIGHT)) {
-                    unknownBoxOnly = true;
-                    supportingEntity = entity.getType().toShortString() + " (only if untracked)";
-                }
-                continue;
+            if (supportsPlayers(entity) && onTop(entity, x, y, z)) {
+                unknownBoxOnly = false;
+                supportingEntity = entity.getType().toShortString();
+                return true;
             }
 
-            unknownBoxOnly = false;
-            supportingEntity = entity.getType().toShortString();
-            return true;
+            // The wider envelope the server falls back to when it cannot identify the entity.
+            // Reported separately rather than folded in, because assuming the fallback always
+            // applies would claim a refusal that usually is not there.
+            if (withinUnknownBox(entity, x, y, z)) {
+                unknownBoxOnly = true;
+                supportingEntity = entity.getType().toShortString() + " (only if untracked)";
+            }
         }
         if (!unknownBoxOnly) supportingEntity = "none";
         return false;
     }
 
-    /**
-     * The server's own support test, parameterised by which box it is using.
-     */
-    private static boolean within(Entity entity, double x, double y, double z,
-                                  double width, double height) {
-        double radius = width / 2.0 + SUPPORT_MARGIN;
-        if (Math.abs(entity.getX() - x) > radius || Math.abs(entity.getZ() - z) > radius) return false;
-        return y >= entity.getY() - SUPPORT_MARGIN && y <= entity.getY() + height + SUPPORT_MARGIN;
+    private static boolean supportsPlayers(Entity entity) {
+        return entity instanceof AbstractBoat || entity instanceof Shulker;
     }
 
-    private boolean touchingApproximatedShape() {
-        BlockPos feet = mc.player.blockPosition();
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    BlockState state = mc.level.getBlockState(feet.offset(dx, dy, dz));
-                    if (isApproximated(state.getBlock())) return true;
-                }
-            }
+    /**
+     * Whiteout's support test for an entity whose size it knows. The player's feet have to be within
+     * the margin of the entity's top.
+     */
+    private static boolean onTop(Entity entity, double x, double y, double z) {
+        double radius = entity.getBbWidth() / 2.0 + SUPPORT_MARGIN;
+        if (Math.abs(entity.getX() - x) > radius || Math.abs(entity.getZ() - z) > radius) return false;
+        return Math.abs(y - (entity.getY() + entity.getBbHeight())) <= SUPPORT_MARGIN;
+    }
+
+    /**
+     * Whiteout's fallback for an entity of unknown size. Anywhere inside a 2x2 box counts.
+     */
+    private static boolean withinUnknownBox(Entity entity, double x, double y, double z) {
+        double radius = UNKNOWN_WIDTH / 2.0 + SUPPORT_MARGIN;
+        if (Math.abs(entity.getX() - x) > radius || Math.abs(entity.getZ() - z) > radius) return false;
+        return y >= entity.getY() - SUPPORT_MARGIN && y <= entity.getY() + UNKNOWN_HEIGHT + SUPPORT_MARGIN;
+    }
+
+    private boolean touchingApproximatedShape(AABB box) {
+        for (BlockPos pos : BlockPos.betweenClosed(box)) {
+            BlockState state = mc.level.getBlockState(pos);
+            if (state.blocksMotion() && isApproximated(state.getBlock())) return true;
         }
         return false;
     }
 
     private static boolean isApproximated(Block block) {
-        return block instanceof StairBlock
-            || block instanceof FenceBlock
-            || block instanceof WallBlock
-            || block instanceof IronBarsBlock
-            || block instanceof DoorBlock;
+        String name = block.builtInRegistryHolder().key().identifier().getPath();
+        for (String suffix : APPROXIMATED) {
+            if (name.endsWith(suffix)) return true;
+        }
+        return false;
     }
 
     @Override
     protected void renderExtra(ImGuiIO io) {
         line("Unloaded chunk nearby", unloadedChunk);
         line("Entity could be support", entitySupport);
-        if (entitySupport || unknownBoxOnly) ImGui.text("    " + supportingEntity);
+        if (entitySupport || unknownBoxOnly) ImGui.textUnformatted("    " + supportingEntity);
         line("Approximated shape nearby", approximatedShape);
 
         ImGui.separator();
-        ImGui.text(anyRefusal() ? "REFUSED, a silent check may not have looked" : "Judgeable");
-        ImGui.text("Refused ticks: " + refusedTicks);
-        ImGui.textDisabled("Client-side estimate; confirm against the server.");
+        ImGui.textUnformatted(anyRefusal() ? "REFUSED, a silent check may not have looked" : "Judgeable");
+        ImGui.textUnformatted("Refused ticks: " + refusedTicks);
+        ImGuiUtil.textDisabled("Client-side estimate; confirm against the server.");
     }
 
     private static void line(String label, boolean active) {
-        ImGui.text((active ? "[x] " : "[ ] ") + label);
+        ImGui.textUnformatted((active ? "[x] " : "[ ] ") + label);
     }
 }

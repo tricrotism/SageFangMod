@@ -25,6 +25,7 @@ public class LocalPlayerGroundMixin {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;onGround()Z")
     )
     private boolean sagefang$claimGround(LocalPlayer self, Operation<Boolean> original) {
-        return NoFall.isClaiming() || original.call(self);
+        if (com.tricrotism.modules.combat.Criticals.isClaimingAirborne()) return false;
+        return NoFall.isClaiming() || com.tricrotism.modules.movement.Jesus.isClaiming() || original.call(self);
     }
 }

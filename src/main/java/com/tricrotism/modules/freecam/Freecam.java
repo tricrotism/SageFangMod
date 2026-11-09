@@ -241,7 +241,7 @@ public final class Freecam extends Module {
         if (ImGui.checkbox("Enabled##freecamEnabled", isActive())) toggle();
 
         if (isEngaged()) {
-            ImGui.text(String.format("Pos: %.1f %.1f %.1f", camX, camY, camZ));
+            ImGui.textUnformatted(String.format("Pos: %.1f %.1f %.1f", camX, camY, camZ));
         }
 
         ImGui.separator();

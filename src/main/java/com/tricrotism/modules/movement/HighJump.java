@@ -73,7 +73,7 @@ public final class HighJump extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Jumps: " + jumps);
-        ImGui.text(String.format("Last launch: %.4f", lastLaunch));
+        ImGui.textUnformatted("Jumps: " + jumps);
+        ImGui.textUnformatted(String.format("Last launch: %.4f", lastLaunch));
     }
 }

@@ -3,6 +3,7 @@ package com.tricrotism.modules.login;
 import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
@@ -85,7 +86,7 @@ public final class LoginKeySpoof extends Module {
             ImGui.setNextItemWidth(260);
             keyBytes.render();
             if (!keyBytes.get().trim().isEmpty() && getKeyBytes() == null) {
-                ImGui.textColored(0.9f, 0.3f, 0.3f, 1.0f, "Unparseable bytes.");
+                ImGuiUtil.textColored(0.9f, 0.3f, 0.3f, 1.0f, "Unparseable bytes.");
             }
         }
 
@@ -94,7 +95,7 @@ public final class LoginKeySpoof extends Module {
             ImGui.setNextItemWidth(260);
             nonceBytes.render();
             if (!nonceBytes.get().trim().isEmpty() && getNonceBytes() == null) {
-                ImGui.textColored(0.9f, 0.3f, 0.3f, 1.0f, "Unparseable bytes.");
+                ImGuiUtil.textColored(0.9f, 0.3f, 0.3f, 1.0f, "Unparseable bytes.");
             }
         }
 

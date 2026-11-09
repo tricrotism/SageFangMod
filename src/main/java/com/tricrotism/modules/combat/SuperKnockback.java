@@ -86,6 +86,6 @@ public final class SuperKnockback extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Taps: " + taps);
+        ImGui.textUnformatted("Taps: " + taps);
     }
 }

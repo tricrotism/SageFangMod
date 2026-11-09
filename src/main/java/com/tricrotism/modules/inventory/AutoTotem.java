@@ -106,6 +106,8 @@ public final class AutoTotem extends Module {
         if (slot == -1) return;
 
         if (method.get() == 0) {
+            // Vanilla ignores a click for a menu that isn't the open one, so wait until it closes.
+            if (mc.player.containerMenu != mc.player.inventoryMenu) return;
             // Shutting a screen and then looking around is ordinary, so a tick containing a close is
             // exempt. The close costs nothing here and buys the whole tick.
             if (closeWithClick.get()) {
@@ -176,7 +178,7 @@ public final class AutoTotem extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Replacements: " + replacements);
-        ImGui.text("Last reaction: " + (lastReactionMs < 0 ? "none" : lastReactionMs + " ms"));
+        ImGui.textUnformatted("Replacements: " + replacements);
+        ImGui.textUnformatted("Last reaction: " + (lastReactionMs < 0 ? "none" : lastReactionMs + " ms"));
     }
 }

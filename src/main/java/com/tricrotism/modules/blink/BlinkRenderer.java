@@ -116,8 +116,9 @@ public final class BlinkRenderer {
         PoseStack matrices = context.poseStack();
         Vec3 camera = context.levelState().cameraRenderState.pos;
 
-        matrices.pushPose();
-        matrices.translate(-camera.x, -camera.y, -camera.z);
+        double cx = camera.x;
+        double cy = camera.y;
+        double cz = camera.z;
 
         context.submitNodeCollector().submitCustomGeometry(matrices, EspRenderUtils.linesThroughWalls(), (snapshot, lines) -> {
             Matrix4f pose = snapshot.pose();
@@ -131,31 +132,34 @@ public final class BlinkRenderer {
                 float g = 1.0f - t;
                 float b = 0.0f;
 
+                float x1 = (float) (from.x - cx);
+                float z1 = (float) (from.z - cz);
+                float x2 = (float) (to.x - cx);
+                float z2 = (float) (to.z - cz);
+
                 // Offset Y slightly above feet so the line is visible on the ground
-                float y1 = (float) from.y + 0.05f;
-                float y2 = (float) to.y + 0.05f;
+                float y1 = (float) (from.y - cy) + 0.05f;
+                float y2 = (float) (to.y - cy) + 0.05f;
 
                 // Direction vector for the normal (required by the lines render type)
-                float dx = (float) (to.x - from.x);
+                float dx = x2 - x1;
                 float dy = y2 - y1;
-                float dz = (float) (to.z - from.z);
+                float dz = z2 - z1;
                 float len = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
                 if (len < 1e-6f) continue;
                 float nx = dx / len;
                 float ny = dy / len;
                 float nz = dz / len;
 
-                lines.addVertex(pose, (float) from.x, y1, (float) from.z)
+                lines.addVertex(pose, x1, y1, z1)
                     .setColor(r, g, b, TRAIL_ALPHA)
                     .setNormal(nx, ny, nz)
                     .setLineWidth(TRAIL_WIDTH);
-                lines.addVertex(pose, (float) to.x, y2, (float) to.z)
+                lines.addVertex(pose, x2, y2, z2)
                     .setColor(r, g, b, TRAIL_ALPHA)
                     .setNormal(nx, ny, nz)
                     .setLineWidth(TRAIL_WIDTH);
             }
         });
-
-        matrices.popPose();
     }
 }

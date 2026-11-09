@@ -115,7 +115,7 @@ public final class Backtrack extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Held: " + queue.size());
-        ImGui.text("Released: " + released);
+        ImGui.textUnformatted("Held: " + queue.size());
+        ImGui.textUnformatted("Released: " + released);
     }
 }

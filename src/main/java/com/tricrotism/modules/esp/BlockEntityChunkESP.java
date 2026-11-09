@@ -5,9 +5,11 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
+import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.utils.EspRenderUtils;
 import imgui.ImGui;
 import imgui.ImGuiIO;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
@@ -37,9 +39,13 @@ public final class BlockEntityChunkESP extends Module {
 
     private final Map<Long, List<BlockPos>> chunkEntities = new ConcurrentHashMap<>();
 
+    // built on the tick, read by the draw call, swapped whole rather than mutated
+    private volatile List<BlockPos> positions = List.of();
+
     private BlockEntityChunkESP() {
         super("blockentitychunkesp", "Block Entity ESP", "Highlight block entities from incoming chunk packets.", Category.RENDER);
         LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(this::render);
+        ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> clear());
     }
 
     /**
@@ -66,29 +72,55 @@ public final class BlockEntityChunkESP extends Module {
 
     @EventHandler
     private void onGameQuit(GameQuitEvent event) {
+        clear();
+    }
+
+    private void clear() {
         chunkEntities.clear();
+        positions = List.of();
     }
 
     @Override
     public void onDeactivate() {
         chunkEntities.clear();
+        positions = List.of();
+    }
+
+    /**
+     * The radius prune and the flatten run once a tick and publish the list the draw call reads.
+     * In {@code render} they walked the whole map and copied every tracked position at frame rate,
+     * which across a 16 chunk radius is comfortably ten thousand references a frame.
+     */
+    @EventHandler
+    private void onTick(TickEvent.Post event) {
+        if (!isActive()) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            positions = List.of();
+            return;
+        }
+
+        int radius = chunkRadius.get();
+        ChunkPos playerChunk = ChunkPos.containing(mc.player.blockPosition());
+        chunkEntities.keySet().removeIf(k ->
+            Math.abs(ChunkPos.getX(k) - playerChunk.x()) > radius
+                || Math.abs(ChunkPos.getZ(k) - playerChunk.z()) > radius);
+
+        if (chunkEntities.isEmpty()) {
+            positions = List.of();
+            return;
+        }
+
+        List<BlockPos> built = new ArrayList<>();
+        for (List<BlockPos> chunk : chunkEntities.values()) built.addAll(chunk);
+
+        positions = List.copyOf(built);
     }
 
     private void render(LevelRenderContext context) {
-        if (!isActive() || chunkEntities.isEmpty()) return;
-
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-
-        ChunkPos playerChunk = ChunkPos.containing(mc.player.blockPosition());
-        chunkEntities.keySet().removeIf(k ->
-            Math.abs(ChunkPos.getX(k) - playerChunk.x()) > chunkRadius.get()
-                || Math.abs(ChunkPos.getZ(k) - playerChunk.z()) > chunkRadius.get());
-        if (chunkEntities.isEmpty()) return;
-
-        List<BlockPos> snapshot = new ArrayList<>();
-        for (List<BlockPos> positions : chunkEntities.values()) snapshot.addAll(positions);
-        if (snapshot.isEmpty()) return;
+        List<BlockPos> snapshot = positions;
+        if (!isActive() || snapshot.isEmpty()) return;
 
         EspRenderUtils.submitBoxes(context, sink -> {
             for (BlockPos p : snapshot) {
@@ -100,6 +132,6 @@ public final class BlockEntityChunkESP extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Chunks: " + chunkEntities.size());
+        ImGui.textUnformatted("Chunks: " + chunkEntities.size());
     }
 }

@@ -52,10 +52,10 @@ public final class TeamDetector extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Seen players: " + PLAYER_HISTORY.size());
+        ImGui.textUnformatted("Seen players: " + PLAYER_HISTORY.size());
         if (ImGui.button("Clear##teamDetectorClear")) PLAYER_HISTORY.clear();
         if (ImGui.treeNode("Names##teamDetectorList")) {
-            for (String name : PLAYER_HISTORY) ImGui.text(name);
+            for (String name : PLAYER_HISTORY) ImGui.textUnformatted(name);
             ImGui.treePop();
         }
     }

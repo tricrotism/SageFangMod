@@ -50,6 +50,8 @@ public class SFCommandManager {
         new ForEachPlayerCommand(),
         new PluginsCommand(),
         new LabyFriendCommand(),
+        new DropCommand(),
+        new CommandDumpCommand(),
         ChatMacros.instance,
     };
 

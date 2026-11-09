@@ -11,6 +11,8 @@ updates:
     ignore:
       - dependency-name: "net.fabricmc.fabric-api:fabric-api"
         versions: ["4.x"]
+        # Must match the version Minecraft ships. Newer ones crash on boot.
+      -   dependency-name: "org.lwjgl:lwjgl-stb"
     commit-message:
       prefix: "[DepUpdate]"
       include: "scope"

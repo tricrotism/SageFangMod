@@ -3,7 +3,7 @@ package com.tricrotism.modules.login;
 import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
-import imgui.ImGui;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGuiIO;
 
 /**
@@ -56,6 +56,6 @@ public final class GameJoinSpoof extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.textDisabled("(-1 = leave as sent by server)");
+        ImGuiUtil.textDisabled("(-1 = leave as sent by server)");
     }
 }

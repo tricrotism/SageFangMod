@@ -7,6 +7,7 @@ import com.tricrotism.api.rotation.RotationManager;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.api.testing.TestLog;
 import com.tricrotism.events.world.TickEvent;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
@@ -250,20 +251,20 @@ public final class KillAura extends Module {
             RotationManager.setMaxStep(step[0]);
         }
         if (ImGui.isItemHovered()) {
-            ImGui.setTooltip("Shared rotation limit; also applies to other rotating modules");
+            ImGuiUtil.setTooltip("Shared rotation limit; also applies to other rotating modules");
         }
 
         if (ImGui.checkbox("Quantize Rotations##kaGcd", RotationManager.isQuantize())) {
             RotationManager.setQuantize(!RotationManager.isQuantize());
         }
         if (ImGui.isItemHovered()) {
-            ImGui.setTooltip("Snap transmitted rotation deltas to the mouse-sensitivity lattice a real "
+            ImGuiUtil.setTooltip("Snap transmitted rotation deltas to the mouse-sensitivity lattice a real "
                 + "client is limited to; shared with other rotating modules");
         }
 
         Entity t = current;
-        ImGui.text("Target: " + (t == null ? "none" : t.getName().getString()));
-        ImGui.text("Attacks: " + attacks);
-        ImGui.text("Targets in range: " + targets.size());
+        ImGui.textUnformatted("Target: " + (t == null ? "none" : t.getName().getString()));
+        ImGui.textUnformatted("Attacks: " + attacks);
+        ImGui.textUnformatted("Targets in range: " + targets.size());
     }
 }

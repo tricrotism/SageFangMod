@@ -1,16 +1,16 @@
 package com.tricrotism.modules.misc;
 
 import com.tricrotism.SageFang;
+import com.tricrotism.api.eventbus.EventHandler;
 import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
+import com.tricrotism.events.game.GameQuitEvent;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -37,6 +37,9 @@ public final class S2CPacketDelayer extends Module {
      */
     public boolean captureInbound(Packet<?> packet) {
         if (!isActive() || flushing) return false;
+        // No player yet means login or configuration. Holding those packets hangs the join, and replay
+        // only handles game packets.
+        if (Minecraft.getInstance().player == null) return false;
         queue.add(packet);
         return true;
     }
@@ -46,20 +49,35 @@ public final class S2CPacketDelayer extends Module {
         queue.clear();
     }
 
+    /**
+     * Held packets belong to the session that produced them, so a disconnect drops them instead of
+     * letting the next {@code onDeactivate} replay one server's world updates into another's
+     * connection. Also the only bound on the queue, which otherwise grows at the full inbound packet
+     * rate for as long as the module is on.
+     */
+    @EventHandler
+    private void onGameQuit(GameQuitEvent event) {
+        queue.clear();
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public void onDeactivate() {
         if (queue.isEmpty()) return;
-        List<Packet<?>> pending = new ArrayList<>(queue);
-        queue.clear();
 
+        // Drain inside the task, so a packet captured just before the toggle gets replayed too.
+        // Otherwise it sits in the queue until the next onActivate clears it.
         Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
             var connection = mc.getConnection();
-            if (connection == null) return;
+            if (connection == null) {
+                queue.clear();
+                return;
+            }
             flushing = true;
             try {
-                for (Packet<?> packet : pending) {
+                Packet<?> packet;
+                while ((packet = queue.poll()) != null) {
                     try {
                         ((Packet<ClientGamePacketListener>) packet).handle(connection);
                     } catch (Exception e) {
@@ -74,6 +92,6 @@ public final class S2CPacketDelayer extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Queued: " + queue.size());
+        ImGui.textUnformatted("Queued: " + queue.size());
     }
 }

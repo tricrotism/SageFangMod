@@ -5,9 +5,11 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
+import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.utils.EspRenderUtils;
 import imgui.ImGui;
 import imgui.ImGuiIO;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
@@ -40,9 +42,14 @@ public final class BlockEntityDataESP extends Module {
     private final Set<Long> flaggedChunks = ConcurrentHashMap.newKeySet();
     private final Set<BlockPos> flaggedBlocks = ConcurrentHashMap.newKeySet();
 
+    // built on the tick, read by the draw call, swapped whole rather than mutated
+    private volatile List<int[]> chunkBoxes = List.of();
+    private volatile List<BlockPos> blocks = List.of();
+
     private BlockEntityDataESP() {
         super("chunkdebug", "Chunk Debug", "Flag chunks/blocks that get block-entity-data packets.", Category.RENDER);
         LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(this::render);
+        ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> clear());
     }
 
     /**
@@ -57,34 +64,60 @@ public final class BlockEntityDataESP extends Module {
 
     @EventHandler
     private void onGameQuit(GameQuitEvent event) {
+        clear();
+    }
+
+    private void clear() {
         flaggedChunks.clear();
         flaggedBlocks.clear();
+        chunkBoxes = List.of();
+        blocks = List.of();
     }
 
     @Override
     public void onDeactivate() {
         flaggedChunks.clear();
         flaggedBlocks.clear();
+        chunkBoxes = List.of();
+        blocks = List.of();
     }
 
-    private void render(LevelRenderContext context) {
-        if (!isActive() || (flaggedChunks.isEmpty() && flaggedBlocks.isEmpty())) return;
+    /**
+     * Both range prunes, the surface-height lookup per chunk and the block copy run once a tick and
+     * publish what the draw call reads. In {@code render} they ran at frame rate, and the height
+     * lookup in particular is a heightmap read per flagged chunk per frame.
+     */
+    @EventHandler
+    private void onTick(TickEvent.Post event) {
+        if (!isActive()) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) return;
+        if (mc.player == null || mc.level == null) {
+            chunkBoxes = List.of();
+            blocks = List.of();
+            return;
+        }
 
+        int maxRadius = radius.get();
         ChunkPos pc = mc.player.chunkPosition();
-        flaggedChunks.removeIf(k -> Math.abs(ChunkPos.getX(k) - pc.x()) > radius.get() || Math.abs(ChunkPos.getZ(k) - pc.z()) > radius.get());
-        flaggedBlocks.removeIf(p -> Math.abs((p.getX() >> 4) - pc.x()) > radius.get() || Math.abs((p.getZ() >> 4) - pc.z()) > radius.get());
+        flaggedChunks.removeIf(k -> Math.abs(ChunkPos.getX(k) - pc.x()) > maxRadius || Math.abs(ChunkPos.getZ(k) - pc.z()) > maxRadius);
+        flaggedBlocks.removeIf(p -> Math.abs((p.getX() >> 4) - pc.x()) > maxRadius || Math.abs((p.getZ() >> 4) - pc.z()) > maxRadius);
 
-        List<int[]> chunkBoxes = new ArrayList<>(flaggedChunks.size());
+        List<int[]> built = new ArrayList<>(flaggedChunks.size());
         for (long key : flaggedChunks) {
             int cx = ChunkPos.getX(key);
             int cz = ChunkPos.getZ(key);
-            chunkBoxes.add(new int[]{cx, cz, mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, cx * 16 + 8, cz * 16 + 8)});
+            built.add(new int[]{cx, cz, mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, cx * 16 + 8, cz * 16 + 8)});
         }
-        List<BlockPos> blocks = showBlocks.get() ? new ArrayList<>(flaggedBlocks) : List.of();
-        if (chunkBoxes.isEmpty() && blocks.isEmpty()) return;
+
+        chunkBoxes = List.copyOf(built);
+        blocks = showBlocks.get() ? List.copyOf(flaggedBlocks) : List.of();
+    }
+
+    private void render(LevelRenderContext context) {
+        List<int[]> chunkBoxes = this.chunkBoxes;
+        List<BlockPos> blocks = this.blocks;
+        if (!isActive() || (chunkBoxes.isEmpty() && blocks.isEmpty())) return;
 
         EspRenderUtils.submitBoxes(context, sink -> {
             for (int[] box : chunkBoxes) {
@@ -102,6 +135,6 @@ public final class BlockEntityDataESP extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Chunks: " + flaggedChunks.size() + "  Blocks: " + flaggedBlocks.size());
+        ImGui.textUnformatted("Chunks: " + flaggedChunks.size() + "  Blocks: " + flaggedBlocks.size());
     }
 }

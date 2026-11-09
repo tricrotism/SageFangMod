@@ -12,6 +12,11 @@ public class MessageUtils {
     }
 
     public static void sendMessage(Minecraft mc, MutableComponent message) {
+        // Packet validation calls this from the netty thread, and chat is render-thread state.
+        if (!mc.isSameThread()) {
+            mc.execute(() -> sendMessage(mc, message));
+            return;
+        }
         MutableComponent component = Component.empty()
             .append(Component.literal("SFM").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))
             .append(Component.literal(" » ").withStyle(ChatFormatting.DARK_GRAY))

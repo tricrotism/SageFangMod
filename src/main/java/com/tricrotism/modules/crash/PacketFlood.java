@@ -8,6 +8,7 @@ import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.mixin.accessors.ConnectionAccessor;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
@@ -165,14 +166,14 @@ public class PacketFlood extends Module {
                 useRawChannel.set(!raw);
             }
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Bypass normal send pipeline via Netty channel");
+                ImGuiUtil.setTooltip("Bypass normal send pipeline via Netty channel");
             }
 
             ImGui.separator();
 
             int currentType = type.get();
             if (currentType >= 0 && currentType < LPX_LIMITS.length) {
-                ImGui.textDisabled(LPX_LIMITS[currentType]);
+                ImGuiUtil.textDisabled(LPX_LIMITS[currentType]);
             }
 
             ImGui.end();

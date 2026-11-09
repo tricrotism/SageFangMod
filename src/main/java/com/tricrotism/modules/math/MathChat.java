@@ -5,6 +5,7 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.SendMessageEvent;
+import com.tricrotism.utils.ImGuiUtil;
 import com.tricrotism.utils.MessageUtils;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -107,14 +108,14 @@ public class MathChat extends Module {
 
             if (ImGui.checkbox("Auto-detect expressions", autoDetect.get())) autoDetect.set(!autoDetect.get());
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("When enabled, expressions like '69 + 420' are evaluated automatically.\n"
+                ImGuiUtil.setTooltip("When enabled, expressions like '69 + 420' are evaluated automatically.\n"
                     + "When disabled, prefix with = to evaluate (e.g. '=69 + 420').");
             }
 
             ImGui.separator();
-            ImGui.text("Operators: + - * / %% ^ ( )");
-            ImGui.text("Constants: pi, e");
-            ImGui.textDisabled("Prefix with = to force evaluation.");
+            ImGui.textUnformatted("Operators: + - * / % ^ ( )");
+            ImGui.textUnformatted("Constants: pi, e");
+            ImGuiUtil.textDisabled("Prefix with = to force evaluation.");
 
             if (!history.isEmpty()) {
                 ImGui.separatorText("History");
@@ -124,11 +125,11 @@ public class MathChat extends Module {
                 for (String entry : history) {
                     int eqIdx = entry.lastIndexOf(" = ");
                     if (eqIdx > 0) {
-                        ImGui.textColored(COLOR_EXPR, entry.substring(0, eqIdx));
+                        ImGuiUtil.textColored(COLOR_EXPR, entry.substring(0, eqIdx));
                         ImGui.sameLine(0, 0);
-                        ImGui.textColored(COLOR_RESULT, " = " + entry.substring(eqIdx + 3));
+                        ImGuiUtil.textColored(COLOR_RESULT, " = " + entry.substring(eqIdx + 3));
                     } else {
-                        ImGui.text(entry);
+                        ImGui.textUnformatted(entry);
                     }
                 }
                 ImGui.endChild();

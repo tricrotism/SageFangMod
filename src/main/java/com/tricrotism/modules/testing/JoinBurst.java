@@ -114,10 +114,10 @@ public final class JoinBurst extends Module {
     @Override
     protected void renderExtra(ImGuiIO io) {
         if (ticksSinceJoin < 0) {
-            ImGui.text("Idle, fires on the next world join");
+            ImGui.textUnformatted("Idle, fires on the next world join");
         } else {
-            ImGui.text("Tick " + ticksSinceJoin + " since join (" + ticksSinceJoin * 50 + " ms)");
+            ImGui.textUnformatted("Tick " + ticksSinceJoin + " since join (" + ticksSinceJoin * 50 + " ms)");
         }
-        ImGui.text("Probes sent: " + probes);
+        ImGui.textUnformatted("Probes sent: " + probes);
     }
 }

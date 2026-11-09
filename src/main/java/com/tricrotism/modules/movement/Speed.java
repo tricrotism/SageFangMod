@@ -84,7 +84,7 @@ public final class Speed extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text(String.format("Horizontal: %.4f blocks/tick", lastSpeed));
-        ImGui.text("Hops: " + hops);
+        ImGui.textUnformatted(String.format("Horizontal: %.4f blocks/tick", lastSpeed));
+        ImGui.textUnformatted("Hops: " + hops);
     }
 }

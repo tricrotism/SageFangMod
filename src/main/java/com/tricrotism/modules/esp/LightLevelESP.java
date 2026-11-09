@@ -99,6 +99,6 @@ public final class LightLevelESP extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Spots: " + results.size());
+        ImGui.textUnformatted("Spots: " + results.size());
     }
 }

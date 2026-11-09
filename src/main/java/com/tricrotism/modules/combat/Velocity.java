@@ -88,6 +88,6 @@ public final class Velocity extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Knockbacks reduced: " + modified);
+        ImGui.textUnformatted("Knockbacks reduced: " + modified);
     }
 }

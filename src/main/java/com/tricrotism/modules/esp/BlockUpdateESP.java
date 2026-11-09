@@ -5,6 +5,7 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
+import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.utils.EspRenderUtils;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -38,6 +39,9 @@ public final class BlockUpdateESP extends Module {
     private final Map<BlockPos, Long> updated = new ConcurrentHashMap<>();
     private volatile BlockPos lastUpdated;
 
+    // built on the tick, read by the draw call, swapped whole rather than mutated
+    private volatile List<BlockPos> visible = List.of();
+
     private BlockUpdateESP() {
         super("blockupdatehighlighter", "Block Update ESP", "Highlight blocks the server updates.", Category.RENDER);
         LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(this::render);
@@ -57,30 +61,52 @@ public final class BlockUpdateESP extends Module {
     private void onGameQuit(GameQuitEvent event) {
         updated.clear();
         lastUpdated = null;
+        visible = List.of();
     }
 
     @Override
     public void onDeactivate() {
         updated.clear();
         lastUpdated = null;
+        visible = List.of();
     }
 
-    private void render(LevelRenderContext context) {
-        if (!isActive() || updated.isEmpty()) return;
+    /**
+     * Expiry and the range filter run once a tick and publish the list the draw call reads. Doing
+     * them in {@code render} swept the map, allocated a list and ran a distance test per entry at
+     * frame rate, for a set that only changes when a block update packet arrives.
+     */
+    @EventHandler
+    private void onTick(TickEvent.Post event) {
+        if (!isActive()) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            visible = List.of();
+            return;
+        }
 
         long now = System.currentTimeMillis();
         updated.values().removeIf(t -> now - t > DISPLAY_MS);
-        if (updated.isEmpty()) return;
 
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+        if (updated.isEmpty()) {
+            visible = List.of();
+            return;
+        }
+
+        List<BlockPos> built = new ArrayList<>(updated.size());
+        for (BlockPos pos : updated.keySet()) {
+            if (inRange(mc, pos)) built.add(pos);
+        }
+
+        visible = List.copyOf(built);
+    }
+
+    private void render(LevelRenderContext context) {
+        List<BlockPos> snapshot = visible;
+        if (!isActive() || snapshot.isEmpty()) return;
 
         BlockPos last = lastUpdated;
-        List<BlockPos> snapshot = new ArrayList<>(updated.size());
-        for (BlockPos pos : updated.keySet()) {
-            if (inRange(mc, pos)) snapshot.add(pos);
-        }
-        if (snapshot.isEmpty()) return;
 
         EspRenderUtils.submitBoxes(context, sink -> {
             for (BlockPos pos : snapshot) {
@@ -103,6 +129,6 @@ public final class BlockUpdateESP extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Tracked: " + updated.size());
+        ImGui.textUnformatted("Tracked: " + updated.size());
     }
 }

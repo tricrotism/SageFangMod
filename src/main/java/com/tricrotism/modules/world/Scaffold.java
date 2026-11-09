@@ -166,7 +166,7 @@ public final class Scaffold extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Placements: " + placements);
-        ImGui.text("In range: " + candidates.size());
+        ImGui.textUnformatted("Placements: " + placements);
+        ImGui.textUnformatted("In range: " + candidates.size());
     }
 }

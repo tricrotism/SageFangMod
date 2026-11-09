@@ -5,9 +5,11 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.api.testing.TestLog;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket;
 import net.minecraft.network.protocol.common.ServerboundPongPacket;
@@ -72,8 +74,9 @@ public final class PingSpoof extends Module {
     public void onDeactivate() {
         ScheduledExecutorService current = scheduler;
         scheduler = null;
-        if (current != null) current.shutdownNow();
-        passthrough.clear();
+        // shutdown, not shutdownNow, so acks already held still go out on schedule. Dropping them would
+        // leave the server waiting on pings nobody answers.
+        if (current != null) current.shutdown();
         TestLog.event("pingspoof_disable",
             "heldKeepAlives", heldKeepAlives.get(), "heldPongs", heldPongs.get());
     }
@@ -105,10 +108,11 @@ public final class PingSpoof extends Module {
         if (kind.equals("keepalive")) heldKeepAlives.incrementAndGet();
         else heldPongs.incrementAndGet();
 
-        TestLog.event("ack_held", "kind", kind, "delayMs", delay);
+        long heldAt = System.nanoTime();
+        var owner = Minecraft.getInstance().getConnection();
         passthrough.add(packet);
         try {
-            current.schedule(() -> resend(packet, kind, delay), delay, TimeUnit.MILLISECONDS);
+            current.schedule(() -> resend(packet, kind, delay, heldAt, owner), delay, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             passthrough.remove(packet);
             SageFang.LOGGER.error("Ping spoof could not schedule a delayed ack", e);
@@ -117,22 +121,27 @@ public final class PingSpoof extends Module {
         return true;
     }
 
-    private void resend(Packet<?> packet, String kind, int delay) {
+    private void resend(Packet<?> packet, String kind, int delay, long heldAt, ClientPacketListener owner) {
+        long heldMs = (System.nanoTime() - heldAt) / 1_000_000;
         var connection = Minecraft.getInstance().getConnection();
-        if (connection == null) {
+        // A keep-alive id from the previous session makes the new server disconnect with a timeout.
+        if (connection == null || connection != owner) {
             passthrough.remove(packet);
+            TestLog.event("ack_dropped", "kind", kind, "delayMs", delay, "heldMs", heldMs);
             return;
         }
         connection.send(packet);
-        TestLog.event("ack_released", "kind", kind, "delayMs", delay);
+        // With the module off, the outbound hook returns before it removes the passthrough entry.
+        passthrough.remove(packet);
+        TestLog.event("ack_released", "kind", kind, "delayMs", delay, "heldMs", heldMs);
     }
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Divergence: " + Math.abs(keepAliveDelayMs.get() - pongDelayMs.get()) + " ms");
+        ImGui.textUnformatted("Divergence: " + Math.abs(keepAliveDelayMs.get() - pongDelayMs.get()) + " ms");
         if (ImGui.isItemHovered()) {
-            ImGui.setTooltip("Equal delays are the control case; a gap is what probes the cross-check");
+            ImGuiUtil.setTooltip("Equal delays are the control case; a gap is what probes the cross-check");
         }
-        ImGui.text("Held: " + heldKeepAlives.get() + " keep-alive, " + heldPongs.get() + " transaction");
+        ImGui.textUnformatted("Held: " + heldKeepAlives.get() + " keep-alive, " + heldPongs.get() + " transaction");
     }
 }

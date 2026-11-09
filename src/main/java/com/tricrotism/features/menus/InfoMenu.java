@@ -45,17 +45,17 @@ public class InfoMenu implements Menu {
                 playerShown = true;
                 ImGui.separatorText("Player");
 
-                ImGui.text("FPS: " + mc.getFps());
+                ImGui.textUnformatted("FPS: " + mc.getFps());
 
                 String xyzFormat = String.format("%.2f, %.2f, %.2f",
                     Math.round(mc.player.getX() * 100D) / 100D,
                     Math.round(mc.player.getY() * 100D) / 100D,
                     Math.round(mc.player.getZ() * 100D) / 100D);
-                ImGui.text("Position: ");
+                ImGui.textUnformatted("Position: ");
                 ImGui.sameLine();
-                ImGui.text(xyzFormat);
+                ImGui.textUnformatted(xyzFormat);
                 if (ImGui.isItemHovered()) {
-                    ImGui.setTooltip("Click to copy");
+                    ImGuiUtil.setTooltip("Click to copy");
                 }
                 if (ImGui.isItemClicked()) {
                     ImGui.setClipboardText(xyzFormat);
@@ -63,22 +63,22 @@ public class InfoMenu implements Menu {
                 }
 
                 String worldName = mc.player.level().dimension().identifier().toString().split(":")[1];
-                ImGui.text("World: " + worldName);
+                ImGui.textUnformatted("World: " + worldName);
 
                 long memoryUsed = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
                 long memoryMax = Runtime.getRuntime().maxMemory();
-                ImGui.text("Memory: " + NumberUtils.formatMemorySize(memoryUsed) + "/" + NumberUtils.formatMemorySize(memoryMax));
+                ImGui.textUnformatted("Memory: " + NumberUtils.formatMemorySize(memoryUsed) + "/" + NumberUtils.formatMemorySize(memoryMax));
 
-                ImGui.text("Packets/s: " + Math.round(mc.player.connection.getConnection().getAverageReceivedPackets()));
+                ImGui.textUnformatted("Packets/s: " + Math.round(mc.player.connection.getConnection().getAverageReceivedPackets()));
 
                 if (!mc.hasSingleplayerServer()) {
                     var remoteAddress = mc.player.connection.getConnection().getRemoteAddress().toString();
                     var serverData = mc.player.connection.getServerData();
                     if (serverData != null) {
-                        ImGui.text("IP: " + remoteAddress.split("/")[0]);
-                        ImGui.text("Address: " + remoteAddress.split("/")[1]);
-                        ImGui.text("Protocol: " + serverData.protocol);
-                        ImGui.text("Brand: " + mc.player.connection.serverBrand());
+                        ImGui.textUnformatted("IP: " + remoteAddress.split("/")[0]);
+                        ImGui.textUnformatted("Address: " + remoteAddress.split("/")[1]);
+                        ImGui.textUnformatted("Protocol: " + serverData.protocol);
+                        ImGui.textUnformatted("Brand: " + mc.player.connection.serverBrand());
                     }
                 }
 
@@ -124,25 +124,25 @@ public class InfoMenu implements Menu {
                 ImGui.separatorText("Server");
 
                 if (!mc.getCurrentServer().ip.contains("mchub")) {
-                    ImGui.text("Not on MCHub");
+                    ImGui.textUnformatted("Not on MCHub");
                 } else if (lastServerInfo == null) {
-                    ImGui.text("No server info");
+                    ImGui.textUnformatted("No server info");
                 } else {
-                    ImGui.text("Instance: " + lastServerInfo.instance());
-                    ImGui.text("World: " + lastServerInfo.world());
-                    ImGui.text("Uptime: " + TimeUtils.getTimeAmount(lastServerInfo.uptime(), true, false));
-                    ImGui.text("Entities: " + lastServerInfo.entityCount());
-                    ImGui.text("Chunks: " + lastServerInfo.loadedChunks());
-                    ImGui.textColored(MetricColors.tps(lastServerInfo.tps()),
+                    ImGui.textUnformatted("Instance: " + lastServerInfo.instance());
+                    ImGui.textUnformatted("World: " + lastServerInfo.world());
+                    ImGui.textUnformatted("Uptime: " + TimeUtils.getTimeAmount(lastServerInfo.uptime(), true, false));
+                    ImGui.textUnformatted("Entities: " + lastServerInfo.entityCount());
+                    ImGui.textUnformatted("Chunks: " + lastServerInfo.loadedChunks());
+                    ImGuiUtil.textColored(MetricColors.tps(lastServerInfo.tps()),
                         "TPS: " + Math.round(lastServerInfo.tps() * 100.0f) / 100.0f);
-                    ImGui.textColored(MetricColors.mspt(lastServerInfo.mspt()),
+                    ImGuiUtil.textColored(MetricColors.mspt(lastServerInfo.mspt()),
                         "MSPT: " + Math.round(lastServerInfo.mspt() * 100.0f) / 100.0f);
-                    ImGui.text("Memory: " + NumberUtils.formatMemorySize(lastServerInfo.memoryUsed())
+                    ImGui.textUnformatted("Memory: " + NumberUtils.formatMemorySize(lastServerInfo.memoryUsed())
                         + "/" + NumberUtils.formatMemorySize(lastServerInfo.memoryMax()));
-                    ImGui.text("Java: " + lastServerInfo.javaVersion());
-                    ImGui.text("Host: " + lastServerInfo.hostname());
-                    ImGui.text("Players: " + NumberUtils.format(lastServerInfo.onlinePlayers()));
-                    ImGui.text("Logins: " + NumberUtils.format(lastServerInfo.logins()));
+                    ImGui.textUnformatted("Java: " + lastServerInfo.javaVersion());
+                    ImGui.textUnformatted("Host: " + lastServerInfo.hostname());
+                    ImGui.textUnformatted("Players: " + NumberUtils.format(lastServerInfo.onlinePlayers()));
+                    ImGui.textUnformatted("Logins: " + NumberUtils.format(lastServerInfo.logins()));
 
                     // Push server metrics
                     float serverMemMb = lastServerInfo.memoryUsed() / (1024f * 1024f);

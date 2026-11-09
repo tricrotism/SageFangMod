@@ -37,11 +37,13 @@ repositories {
     }
 }
 
-// MC 1.21.10 ships lwjgl-stb 3.3.3; imgui-java's BOM upgrades it to 3.3.4
-// which removed nstbir_resize_uint8, breaking NativeImage.resizeSubRectTo
+// imgui-java's BOM pins lwjgl-stb to 3.3.4, which removed nstbir_resize_uint8 and so breaks
+// NativeImage.resizeSubRectTo. The force beats that BOM, and the version must stay equal to the
+// lwjgl MC ships (26.2 ships 3.4.1): only those natives are on the launch classpath, so a higher
+// stb crashes the dev client at boot with "Failed to locate library: lwjgl_stb.dll".
 configurations.all {
     resolutionStrategy {
-        force 'org.lwjgl:lwjgl-stb:3.4.3'
+        force 'org.lwjgl:lwjgl-stb:3.4.1'
     }
 }
 
@@ -83,6 +85,15 @@ dependencies {
 
 loom {
     accessWidenerPath = file("src/main/resources/sagefang.accesswidener")
+
+    // -PclientJvmArgs="-XX:+UseZGC ..." adds JVM flags to runClient, for A/B testing runtime options
+    runs {
+        client {
+            if (project.hasProperty("clientJvmArgs")) {
+                vmArgs(project.property("clientJvmArgs").toString().trim().split("\\s+"))
+            }
+        }
+    }
 }
 
 processResources {
@@ -95,6 +106,33 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.release = 25
+}
+
+// imgui-java hands the Java string to ImGui as a printf format string with one NULL vararg
+// behind it, so a percent sign in the text is parsed as a conversion and %n writes through that
+// NULL. Server-supplied strings reach these call sites. Use ImGui.textUnformatted, or the
+// ImGuiUtil wrappers for the variants that have no unformatted form.
+def checkImGuiFormatSinks = tasks.register("checkImGuiFormatSinks") {
+    def sources = fileTree("src/main/java") { include "**/*.java" }
+    inputs.files(sources)
+    doLast {
+        def sink = ~/ImGui\.(text|textColored|textDisabled|textWrapped|labelText|bulletText|setTooltip)\(/
+        def offenders = []
+        sources.each { file ->
+            file.eachLine("UTF-8", 1) { line, number ->
+                if (sink.matcher(line).find()) offenders << "${file}:${number}: ${line.trim()}"
+            }
+        }
+        if (!offenders.isEmpty()) {
+            throw new GradleException(
+                    "ImGui format-string sinks found, use ImGui.textUnformatted or ImGuiUtil:\n  "
+                            + offenders.join("\n  "))
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn checkImGuiFormatSinks
 }
 
 // Dependencies are distributed as Jar-in-Jar nested jars via loom's `include`

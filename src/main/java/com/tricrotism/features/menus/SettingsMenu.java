@@ -6,6 +6,7 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.config.SageFangConfig;
 import com.tricrotism.modules.packets.UIPacketDelay;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiCond;
@@ -28,8 +29,13 @@ public class SettingsMenu implements Menu {
     private boolean keyWasDown;
 
     private final Map<String, Boolean> sectionOpen = new HashMap<>();
+    private final Map<String, String> headerIds = new HashMap<>();
 
+    // Built with the category cache, so the module list builds no strings per frame.
     private Map<Category, List<Module>> categoryCache;
+    private final Map<Category, String> categoryHeaders = new EnumMap<>(Category.class);
+    private final Map<Category, String> categoryKeys = new EnumMap<>(Category.class);
+    private final Map<Module, String> moduleLabels = new IdentityHashMap<>();
     private int cachedModuleCount = -1;
 
     @Override
@@ -71,20 +77,30 @@ public class SettingsMenu implements Menu {
      * Reading it every frame would put a config lookup per section in the render path.
      */
     private boolean section(String label, String key, boolean defaultOpen) {
-        String configKey = "menu.settings.section." + key;
         Boolean cached = sectionOpen.get(key);
-        boolean wasOpen = cached != null ? cached : io.avaje.config.Config.getBool(configKey, defaultOpen);
+        boolean wasOpen = cached != null ? cached : io.avaje.config.Config.getBool(sectionConfigKey(key), defaultOpen);
         if (cached == null) {
             sectionOpen.put(key, wasOpen);
             ImGui.setNextItemOpen(wasOpen, ImGuiCond.Always);
         }
 
-        boolean open = ImGui.collapsingHeader(label + "##section_" + key);
+        // Keyed by label, which only changes when a category's module count does.
+        String id = headerIds.get(label);
+        if (id == null) {
+            id = label + "##section_" + key;
+            headerIds.put(label, id);
+        }
+
+        boolean open = ImGui.collapsingHeader(id);
         if (open != wasOpen) {
             sectionOpen.put(key, open);
-            io.avaje.config.Config.setProperty(configKey, String.valueOf(open));
+            io.avaje.config.Config.setProperty(sectionConfigKey(key), String.valueOf(open));
         }
         return open;
+    }
+
+    private static String sectionConfigKey(String key) {
+        return "menu.settings.section." + key;
     }
 
     private void renderMenusSection() {
@@ -103,7 +119,7 @@ public class SettingsMenu implements Menu {
             io.avaje.config.Config.setProperty("menu.log.visible", String.valueOf(!logVisible));
         }
         if (ImGui.isItemHovered()) {
-            ImGui.setTooltip("Module messages window (with a toggle for chat output)");
+            ImGuiUtil.setTooltip("Module messages window (with a toggle for chat output)");
         }
     }
 
@@ -114,21 +130,21 @@ public class SettingsMenu implements Menu {
             SageFangConfig.setMergedInfoMenu(!SageFangConfig.isMergedInfoMenu());
         }
         if (ImGui.isItemHovered()) {
-            ImGui.setTooltip("Combine server and player info into one window");
+            ImGuiUtil.setTooltip("Combine server and player info into one window");
         }
 
         if (ImGui.checkbox("Filled ESP##espFilled", SageFangConfig.isEspFilled())) {
             SageFangConfig.setEspFilled(!SageFangConfig.isEspFilled());
         }
         if (ImGui.isItemHovered()) {
-            ImGui.setTooltip("Shade ESP boxes translucently and darken their outlines");
+            ImGuiUtil.setTooltip("Shade ESP boxes translucently and darken their outlines");
         }
 
         if (ImGui.checkbox("Show Graphs##showGraphs", SageFangConfig.isShowGraphs())) {
             SageFangConfig.setShowGraphs(!SageFangConfig.isShowGraphs());
         }
         if (ImGui.isItemHovered()) {
-            ImGui.setTooltip("Show rolling graphs for TPS, MSPT, memory, FPS");
+            ImGuiUtil.setTooltip("Show rolling graphs for TPS, MSPT, memory, FPS");
         }
 
         if (SageFangConfig.isShowGraphs() && ImGui.treeNode("Graph Settings##graphSettings")) {
@@ -165,7 +181,7 @@ public class SettingsMenu implements Menu {
                 SageFangConfig.setGraphHistory(historyArr[0]);
             }
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Number of data points to keep");
+                ImGuiUtil.setTooltip("Number of data points to keep");
             }
 
             ImGui.treePop();
@@ -197,7 +213,7 @@ public class SettingsMenu implements Menu {
             ImGui.sameLine();
             if (ImGui.button("Clear##delayUIClear")) UIPacketDelay.clear();
             ImGui.sameLine();
-            ImGui.text("Queued: " + queued);
+            ImGui.textUnformatted("Queued: " + queued);
         }
 
         if (ImGui.checkbox("Send UI Packets##sendUIPackets", SageFangConfig.isSendUIPackets())) {
@@ -228,6 +244,11 @@ public class SettingsMenu implements Menu {
             for (Category cat : Category.values()) byCategory.put(cat, new ArrayList<>());
             for (Module m : registry) {
                 byCategory.get(m.category).add(m);
+                moduleLabels.put(m, m.title + "##" + m.id);
+            }
+            for (var entry : byCategory.entrySet()) {
+                categoryHeaders.put(entry.getKey(), entry.getKey().displayName() + " (" + entry.getValue().size() + ")");
+                categoryKeys.put(entry.getKey(), "cat." + entry.getKey().name());
             }
             categoryCache = byCategory;
             cachedModuleCount = registry.size();
@@ -238,16 +259,15 @@ public class SettingsMenu implements Menu {
             if (modules.isEmpty()) continue;
 
             Category cat = entry.getKey();
-            String header = cat.displayName() + " (" + modules.size() + ")";
-            boolean open = section(header, "cat." + cat.name(), true);
-            if (ImGui.isItemHovered()) ImGui.setTooltip(cat.description());
+            boolean open = section(categoryHeaders.get(cat), categoryKeys.get(cat), true);
+            if (ImGui.isItemHovered()) ImGuiUtil.setTooltip(cat.description());
             if (!open) continue;
             for (Module m : modules) {
-                if (ImGui.checkbox(m.title + "##" + m.id, m.isVisible())) {
+                if (ImGui.checkbox(moduleLabels.get(m), m.isVisible())) {
                     m.toggleVisible();
                 }
                 if (ImGui.isItemHovered() && !m.description.isEmpty()) {
-                    ImGui.setTooltip(m.description);
+                    ImGuiUtil.setTooltip(m.description);
                 }
             }
         }

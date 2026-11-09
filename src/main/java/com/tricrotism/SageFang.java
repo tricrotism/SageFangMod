@@ -4,6 +4,7 @@ import com.tricrotism.api.eventbus.EventBus;
 import com.tricrotism.api.eventbus.EventHandler;
 import com.tricrotism.api.eventbus.IEventBus;
 import com.tricrotism.api.menus.Menu;
+import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.rotation.RotationManager;
 import com.tricrotism.config.ConfigPersistence;
 import com.tricrotism.data.ServerInfo;
@@ -13,6 +14,8 @@ import com.tricrotism.events.ui.MenuRegistrationEvent;
 import com.tricrotism.features.commands.SFCommandManager;
 import com.tricrotism.features.menus.*;
 import com.tricrotism.modules.blink.Blink;
+import com.tricrotism.modules.chat.ChatStacker;
+import com.tricrotism.modules.chat.SageChat;
 import com.tricrotism.modules.clientdetect.ClientDetect;
 import com.tricrotism.modules.combat.*;
 import com.tricrotism.modules.crash.*;
@@ -22,14 +25,14 @@ import com.tricrotism.modules.freecam.Freecam;
 import com.tricrotism.modules.freelook.FreeLook;
 import com.tricrotism.modules.ghost.GhostBlock;
 import com.tricrotism.modules.inventory.AutoTotem;
+import com.tricrotism.modules.inventory.ContainerTools;
+import com.tricrotism.modules.inventory.DropAll;
 import com.tricrotism.modules.items.ItemViewer;
 import com.tricrotism.modules.latency.BadPackets;
 import com.tricrotism.modules.latency.ForgedAck;
 import com.tricrotism.modules.latency.PingSpoof;
 import com.tricrotism.modules.latency.Timer;
-import com.tricrotism.modules.logger.ChannelLogger;
-import com.tricrotism.modules.logger.PayloadLogger;
-import com.tricrotism.modules.logger.TeamDetector;
+import com.tricrotism.modules.logger.*;
 import com.tricrotism.modules.login.GameJoinSpoof;
 import com.tricrotism.modules.login.HandshakeSpoofer;
 import com.tricrotism.modules.login.LoginHelloSpoof;
@@ -39,17 +42,19 @@ import com.tricrotism.modules.math.MathChat;
 import com.tricrotism.modules.misc.*;
 import com.tricrotism.modules.movement.*;
 import com.tricrotism.modules.packets.PacketManager;
+import com.tricrotism.modules.packets.UIPacketDelay;
 import com.tricrotism.modules.profiler.FrameProfiler;
-import com.tricrotism.modules.testing.InputRecorder;
-import com.tricrotism.modules.testing.InputReplay;
-import com.tricrotism.modules.testing.JoinBurst;
-import com.tricrotism.modules.testing.RefusalMonitor;
+import com.tricrotism.modules.profiler.MemoryInspector;
+import com.tricrotism.modules.render.FullBright;
+import com.tricrotism.modules.render.NoTextureRotations;
+import com.tricrotism.modules.testing.*;
 import com.tricrotism.modules.world.FastMine;
 import com.tricrotism.modules.world.Nuker;
 import com.tricrotism.modules.world.Scaffold;
 import com.tricrotism.modules.world.SingleMine;
 import com.tricrotism.modules.zoom.Zoom;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import org.apache.logging.log4j.LogManager;
@@ -85,6 +90,9 @@ public class SageFang implements ClientModInitializer {
             (MethodHandles.Lookup) lookupInMethod.invoke(null, clazz, MethodHandles.lookup()));
 
         EVENT_BUS.subscribe(this);
+
+        ClientLifecycleEvents.CLIENT_STOPPING.register(_ -> Module.shutdownAll());
+        io.avaje.config.Config.getOptional("remote.port").ifPresent(port -> RemoteControl.start(Integer.parseInt(port)));
         EVENT_BUS.subscribe(RotationManager.instance);
         EVENT_BUS.subscribe(SkillCrash.instance);
         EVENT_BUS.subscribe(OffhandCrash.instance);
@@ -95,6 +103,7 @@ public class SageFang implements ClientModInitializer {
         EVENT_BUS.subscribe(FreeLook.instance);
         EVENT_BUS.subscribe(Freecam.instance);
         EVENT_BUS.subscribe(MathChat.instance);
+        EVENT_BUS.subscribe(SageChat.instance);
         EVENT_BUS.subscribe(ClientDetect.instance);
         EVENT_BUS.subscribe(DeathBypass.instance);
         EVENT_BUS.subscribe(AutoDrinkSpam.instance);
@@ -103,6 +112,9 @@ public class SageFang implements ClientModInitializer {
         EVENT_BUS.subscribe(KillAura.instance);
         EVENT_BUS.subscribe(Backtrack.instance);
         EVENT_BUS.subscribe(AutoTotem.instance);
+        EVENT_BUS.subscribe(DropAll.instance);
+        EVENT_BUS.subscribe(ContainerTools.instance);
+        EVENT_BUS.subscribe(FullBright.instance);
         EVENT_BUS.subscribe(NoFall.instance);
         EVENT_BUS.subscribe(NoSlow.instance);
         EVENT_BUS.subscribe(Nuker.instance);
@@ -115,9 +127,14 @@ public class SageFang implements ClientModInitializer {
         EVENT_BUS.subscribe(HighJump.instance);
         EVENT_BUS.subscribe(Fly.instance);
         EVENT_BUS.subscribe(Exempt.instance);
+        EVENT_BUS.subscribe(StreamGap.instance);
+        EVENT_BUS.subscribe(OmniSprint.instance);
+        EVENT_BUS.subscribe(Jesus.instance);
+        EVENT_BUS.subscribe(Criticals.instance);
         EVENT_BUS.subscribe(JoinBurst.instance);
         EVENT_BUS.subscribe(RefusalMonitor.instance);
         EVENT_BUS.subscribe(BadPackets.instance);
+        EVENT_BUS.subscribe(ForgedAck.instance);
         EVENT_BUS.subscribe(SingleMine.instance);
         EVENT_BUS.subscribe(FastMine.instance);
         EVENT_BUS.subscribe(AmethystESP.instance);
@@ -136,6 +153,16 @@ public class SageFang implements ClientModInitializer {
         EVENT_BUS.subscribe(SpearSwap.instance);
         EVENT_BUS.subscribe(ElytraCast.instance);
         EVENT_BUS.subscribe(TeamDetector.instance);
+        EVENT_BUS.subscribe(VanishDetect.instance);
+        EVENT_BUS.subscribe(ProbeDetect.instance);
+        EVENT_BUS.subscribe(ServerPulse.instance);
+        EVENT_BUS.subscribe(CorrectionLog.instance);
+        EVENT_BUS.subscribe(MemoryInspector.instance);
+        EVENT_BUS.subscribe(EntityInspector.instance);
+        EVENT_BUS.subscribe(EnchantSeed.instance);
+        EVENT_BUS.subscribe(S2CPacketDelayer.instance);
+        EVENT_BUS.subscribe(GrimEntityBlink.instance);
+        EVENT_BUS.subscribe(GrimFishingBlink.instance);
         EVENT_BUS.subscribe(BoatNoClip.instance);
         EVENT_BUS.subscribe(ChannelLogger.instance);
         EVENT_BUS.subscribe(PositionCrash.instance);
@@ -150,6 +177,8 @@ public class SageFang implements ClientModInitializer {
     @EventHandler
     private void onGameQuit(GameQuitEvent event) {
         lastServerInfo = null;
+
+        UIPacketDelay.clear();
     }
 
     /**
@@ -170,6 +199,7 @@ public class SageFang implements ClientModInitializer {
                 Blink.instance,
                 PacketManager.instance,
                 ItemViewer.instance,
+                SageChat.instance,
                 ChatMacros.instance,
                 GhostBlock.instance,
                 Zoom.instance,
@@ -195,6 +225,8 @@ public class SageFang implements ClientModInitializer {
                 KillAura.instance,
                 Backtrack.instance,
                 AutoTotem.instance,
+                DropAll.instance,
+                ContainerTools.instance,
                 NoFall.instance,
                 NoSlow.instance,
                 Nuker.instance,
@@ -209,16 +241,27 @@ public class SageFang implements ClientModInitializer {
                 HighJump.instance,
                 Fly.instance,
                 TickEndSuppress.instance,
+                StreamGap.instance,
+                OmniSprint.instance,
+                Jesus.instance,
+                Criticals.instance,
                 Exempt.instance,
                 JoinBurst.instance,
                 RefusalMonitor.instance,
                 FrameProfiler.instance,
+                MemoryInspector.instance,
+                EntityInspector.instance,
+                EnchantSeed.instance,
                 PingSpoof.instance,
                 BadPackets.instance,
                 ForgedAck.instance,
                 Timer.instance,
                 RealPlayerNames.instance,
                 LaggySign.instance,
+                ChatStacker.instance,
+                AutoReconnect.instance,
+                FullBright.instance,
+                NoTextureRotations.instance,
                 SingleMine.instance,
                 FastMine.instance,
                 GameStateBypass.instance,
@@ -243,10 +286,16 @@ public class SageFang implements ClientModInitializer {
                 ElytraCast.instance,
                 ClickSlotFlood.instance,
                 TeamDetector.instance,
+                VanishDetect.instance,
+                ProbeDetect.instance,
+                ServerPulse.instance,
+                CorrectionLog.instance,
                 BoatNoClip.instance,
                 PayloadLogger.instance,
                 ChannelLogger.instance
         );
+
+            Module.restoreActive();
         }
         event.registerAll(menus);
     }

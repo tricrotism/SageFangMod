@@ -153,6 +153,6 @@ public final class BaseChunkESP extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Flagged: " + flagged.size());
+        ImGui.textUnformatted("Flagged: " + flagged.size());
     }
 }

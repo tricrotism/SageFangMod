@@ -5,9 +5,9 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 
@@ -139,21 +139,12 @@ public final class ChannelLogger extends Module {
     }
 
     @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.None);
-
-        if (ImGui.checkbox("Enabled##channelLoggerEnabled", isActive())) toggle();
-        ImGui.sameLine();
-        if (ImGui.checkbox("Hex##clHex", showHex.get())) showHex.set(!showHex.get());
-        ImGui.sameLine();
+    protected void renderExtra(ImGuiIO io) {
         if (ImGui.button("Clear##clClear")) {
             channels.clear();
             selected = null;
         }
-        ImGui.text("Channels: " + channels.size());
+        ImGui.textUnformatted("Channels: " + channels.size());
         ImGui.separator();
 
         List<String> sorted = channels.keySet().stream().sorted().toList();
@@ -172,24 +163,22 @@ public final class ChannelLogger extends Module {
         ImGui.beginChild("##clDetail", 420, 220, true);
         ChannelInfo info = selected != null ? channels.get(selected) : null;
         if (info == null) {
-            ImGui.textDisabled("Select a channel.");
+            ImGuiUtil.textDisabled("Select a channel.");
         } else {
-            ImGui.textWrapped(selected);
+            ImGuiUtil.textWrapped(selected);
             ImGui.separator();
-            ImGui.textWrapped(info.lastSummary());
+            ImGuiUtil.textWrapped(info.lastSummary());
             if (info.lastSize() > 0) {
                 ImGui.separator();
-                ImGui.textDisabled("ASCII (" + info.lastSize() + " bytes)");
-                ImGui.textWrapped(info.lastAscii());
+                ImGuiUtil.textDisabled("ASCII (" + info.lastSize() + " bytes)");
+                ImGuiUtil.textWrapped(info.lastAscii());
                 if (showHex.get()) {
                     ImGui.separator();
-                    ImGui.textDisabled("Hex");
-                    ImGui.textWrapped(info.lastHex());
+                    ImGuiUtil.textDisabled("Hex");
+                    ImGuiUtil.textWrapped(info.lastHex());
                 }
             }
         }
         ImGui.endChild();
-
-        ImGui.end();
     }
 }

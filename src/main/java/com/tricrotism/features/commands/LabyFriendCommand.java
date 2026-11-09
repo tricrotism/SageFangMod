@@ -85,7 +85,7 @@ public class LabyFriendCommand implements SFCommand {
             Placeholder.unparsed("count", String.valueOf(friends.size()))));
         for (Friend f : friends) {
             String where = f.getServer() != null && f.getServer().isPresent()
-                ? f.getServer().getAddress() : "—";
+                ? f.getServer().getAddress() : "-";
             feedback(ctx, MiniMessage.format(f.getStatus().getColorTag() + "● <off_white><name> <dark_gray>(<where>)",
                 Placeholder.unparsed("name", f.getName()),
                 Placeholder.unparsed("where", where)));

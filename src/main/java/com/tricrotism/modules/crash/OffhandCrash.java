@@ -8,6 +8,7 @@ import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
 import com.tricrotism.mixin.accessors.ConnectionAccessor;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiWindowFlags;
@@ -98,7 +99,7 @@ public class OffhandCrash extends Module {
                 doCrash.set(!crash);
             }
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Send offhand swap packets each tick");
+                ImGuiUtil.setTooltip("Send offhand swap packets each tick");
             }
 
             if (crash) {
@@ -115,7 +116,7 @@ public class OffhandCrash extends Module {
                 antiCrash.set(!anti);
             }
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Suppress incoming offhand swap effects to prevent being crashed");
+                ImGuiUtil.setTooltip("Suppress incoming offhand swap effects to prevent being crashed");
             }
 
             ImGui.end();

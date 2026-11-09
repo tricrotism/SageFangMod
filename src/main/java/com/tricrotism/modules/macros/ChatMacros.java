@@ -9,6 +9,7 @@ import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.features.commands.SFCommand;
+import com.tricrotism.utils.ImGuiUtil;
 import com.tricrotism.utils.MessageUtils;
 import com.tricrotism.utils.ScheduledTaskRunner;
 import imgui.ImGui;
@@ -223,19 +224,19 @@ public class ChatMacros extends Module implements SFCommand {
                 commandInterval.set(Math.max(0, intervalArr[0]));
             }
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Delay between each command in a macro chain.\n0 = all instant. 100 = 100ms between each.\nFor 28 commands at 100ms: ~2.7s total.");
+                ImGuiUtil.setTooltip("Delay between each command in a macro chain.\n0 = all instant. 100 = 100ms between each.\nFor 28 commands at 100ms: ~2.7s total.");
             }
 
 
             ImGui.separatorText("Add Macro");
-            ImGui.textDisabled("Tip: Use the same name to chain multiple messages.");
+            ImGuiUtil.textDisabled("Tip: Use the same name to chain multiple messages.");
             ImGui.inputText("Name##macroName", nameBuffer);
             ImGui.inputText("Value##macroValue", valueBuffer);
             ImGui.setNextItemWidth(120);
             ImGui.inputInt("Delay (ms)##macroDelay", delayBuffer, 100, 500);
             if (delayBuffer.get() < 0) delayBuffer.set(0);
             if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Delay before sending this message.\n0 = send immediately.");
+                ImGuiUtil.setTooltip("Delay before sending this message.\n0 = send immediately.");
             }
             if (ImGui.button("Add##macroAdd")) {
                 String name = nameBuffer.get().trim();
@@ -254,7 +255,7 @@ public class ChatMacros extends Module implements SFCommand {
             ImGui.separatorText("Macros");
             Map<String, List<String>> macros = getMacros();
             if (macros.isEmpty()) {
-                ImGui.text("No macros saved.");
+                ImGui.textUnformatted("No macros saved.");
             } else {
                 float lineH = ImGui.getTextLineHeightWithSpacing();
                 float maxH = lineH * MAX_VISIBLE_MACROS;
@@ -274,8 +275,8 @@ public class ChatMacros extends Module implements SFCommand {
                                 runMacro(name);
                             }
                         } else {
-                            ImGui.textDisabled("Run All");
-                            if (ImGui.isItemHovered()) ImGui.setTooltip("Enable module to run");
+                            ImGuiUtil.textDisabled("Run All");
+                            if (ImGui.isItemHovered()) ImGuiUtil.setTooltip("Enable module to run");
                         }
                         ImGui.sameLine();
                         if (ImGui.button("Delete Macro##delMacro_" + name)) {
@@ -285,15 +286,15 @@ public class ChatMacros extends Module implements SFCommand {
                         for (int i = 0; i < values.size(); i++) {
                             String val = values.get(i);
                             String display = formatMacroValue(val);
-                            ImGui.text("[" + i + "] " + display);
+                            ImGui.textUnformatted("[" + i + "] " + display);
                             ImGui.sameLine();
                             if (isActive()) {
                                 if (ImGui.button("Run##runVal_" + name + "_" + i)) {
                                     runSingleValue(val);
                                 }
                             } else {
-                                ImGui.textDisabled("Run");
-                                if (ImGui.isItemHovered()) ImGui.setTooltip("Enable module to run");
+                                ImGuiUtil.textDisabled("Run");
+                                if (ImGui.isItemHovered()) ImGuiUtil.setTooltip("Enable module to run");
                             }
                             ImGui.sameLine();
                             if (ImGui.button("Delete##delVal_" + name + "_" + i)) {

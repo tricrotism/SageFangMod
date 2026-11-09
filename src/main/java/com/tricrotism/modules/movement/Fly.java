@@ -73,6 +73,6 @@ public final class Fly extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Ticks flown: " + ticksFlown);
+        ImGui.textUnformatted("Ticks flown: " + ticksFlown);
     }
 }

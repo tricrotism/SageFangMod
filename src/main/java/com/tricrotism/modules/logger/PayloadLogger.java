@@ -3,9 +3,9 @@ package com.tricrotism.modules.logger;
 import com.tricrotism.api.modules.Category;
 import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.flag.ImGuiWindowFlags;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
@@ -13,6 +13,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 
 /**
  * Logs custom plugin-message payloads in both directions, showing the channel id
@@ -75,31 +76,22 @@ public final class PayloadLogger extends Module {
     }
 
     @Override
-    public void frame(ImGuiIO io) {
-        if (!isVisible()) return;
-
-        ImGui.setNextWindowBgAlpha(0.45f);
-        ImGui.begin(title, ImGuiWindowFlags.None);
-        if (ImGui.checkbox("Enabled##payloadLoggerEnabled", isActive())) toggle();
-        ImGui.sameLine();
-        if (ImGui.checkbox("C2S##plC2S", logC2S.get())) logC2S.set(!logC2S.get());
-        ImGui.sameLine();
-        if (ImGui.checkbox("S2C##plS2C", logS2C.get())) logS2C.set(!logS2C.get());
-        ImGui.sameLine();
+    protected void renderExtra(ImGuiIO io) {
         if (ImGui.button("Clear##plClear")) {
             synchronized (entries) {
                 entries.clear();
             }
         }
 
+        List<String> lines;
+        synchronized (entries) {
+            lines = List.copyOf(entries);
+        }
+
         ImGui.separator();
         ImGui.beginChild("##payloadLoggerLog", 560, 260, true);
-        synchronized (entries) {
-            for (String line : entries) ImGui.textWrapped(line);
-        }
+        for (String line : lines) ImGuiUtil.textWrapped(line);
         if (ImGui.getScrollY() >= ImGui.getScrollMaxY() - 2f) ImGui.setScrollHereY(1f);
         ImGui.endChild();
-
-        ImGui.end();
     }
 }

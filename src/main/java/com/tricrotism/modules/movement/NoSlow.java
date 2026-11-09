@@ -96,7 +96,7 @@ public final class NoSlow extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Transitions: " + transitions);
+        ImGui.textUnformatted("Transitions: " + transitions);
     }
 
     private static final long REPEAT_INTERVAL_MS = 1000L;

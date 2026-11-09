@@ -6,6 +6,7 @@ import com.tricrotism.api.modules.Module;
 import com.tricrotism.api.settings.Settings;
 import com.tricrotism.api.testing.TestLog;
 import com.tricrotism.events.world.TickEvent;
+import com.tricrotism.utils.ImGuiUtil;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import net.minecraft.network.protocol.game.ServerboundInteractPacket;
@@ -99,18 +100,18 @@ public final class BadPackets extends Module {
         if (!armed) ImGui.beginDisabled();
 
         if (ImGui.button("Self Interact##bpSelf")) sendSelfInteract();
-        if (ImGui.isItemHovered()) ImGui.setTooltip("Attack our own entity id");
+        if (ImGui.isItemHovered()) ImGuiUtil.setTooltip("Attack our own entity id");
 
         if (ImGui.button("Invalid Held Item##bpHeld")) sendInvalidHeldItem();
-        if (ImGui.isItemHovered()) ImGui.setTooltip("Select hotbar slot 99");
+        if (ImGui.isItemHovered()) ImGuiUtil.setTooltip("Select hotbar slot 99");
 
         if (ImGui.button("Unknown Entity##bpUnknown")) sendUnknownEntityAttack();
-        if (ImGui.isItemHovered()) ImGui.setTooltip("Attack an entity id nothing is tracking");
+        if (ImGui.isItemHovered()) ImGuiUtil.setTooltip("Attack an entity id nothing is tracking");
 
         if (ImGui.button("Packets Per Tick##bpBurst")) queueFlood();
-        if (ImGui.isItemHovered()) ImGui.setTooltip("Send the whole burst inside one tick");
+        if (ImGui.isItemHovered()) ImGuiUtil.setTooltip("Send the whole burst inside one tick");
 
         if (!armed) ImGui.endDisabled();
-        ImGui.textDisabled("One probe per press; check the alert log after each.");
+        ImGuiUtil.textDisabled("One probe per press; check the alert log after each.");
     }
 }

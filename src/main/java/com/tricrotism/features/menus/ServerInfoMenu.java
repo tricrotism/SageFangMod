@@ -33,57 +33,57 @@ public class ServerInfoMenu implements Menu {
             ImGui.begin("Server Info", flags);
 
             if (!mc.getCurrentServer().ip.contains("mchub")) {
-                ImGui.text("Not on MCHub");
+                ImGui.textUnformatted("Not on MCHub");
                 ImGui.end();
                 return;
             }
 
             if (lastServerInfo == null) {
-                ImGui.text("No server info");
+                ImGui.textUnformatted("No server info");
                 ImGui.end();
                 return;
             }
 
-            ImGui.text("Instance");
+            ImGui.textUnformatted("Instance");
             ImGui.sameLine();
-            ImGui.text(lastServerInfo.instance());
-            ImGui.text("World");
+            ImGui.textUnformatted(lastServerInfo.instance());
+            ImGui.textUnformatted("World");
             ImGui.sameLine();
-            ImGui.text(lastServerInfo.world());
-            ImGui.text("Uptime");
+            ImGui.textUnformatted(lastServerInfo.world());
+            ImGui.textUnformatted("Uptime");
             ImGui.sameLine();
-            ImGui.text(TimeUtils.getTimeAmount(lastServerInfo.uptime(), true, false));
-            ImGui.text("Entities");
+            ImGui.textUnformatted(TimeUtils.getTimeAmount(lastServerInfo.uptime(), true, false));
+            ImGui.textUnformatted("Entities");
             ImGui.sameLine();
-            ImGui.text(String.valueOf(lastServerInfo.entityCount()));
-            ImGui.text("Chunks");
+            ImGui.textUnformatted(String.valueOf(lastServerInfo.entityCount()));
+            ImGui.textUnformatted("Chunks");
             ImGui.sameLine();
-            ImGui.text(String.valueOf(lastServerInfo.loadedChunks()));
+            ImGui.textUnformatted(String.valueOf(lastServerInfo.loadedChunks()));
 
-            ImGui.text("TPS");
+            ImGui.textUnformatted("TPS");
             ImGui.sameLine();
-            ImGui.textColored(MetricColors.tps(lastServerInfo.tps()), String.valueOf(Math.round(lastServerInfo.tps() * 100.0f) / 100.0f));
+            ImGuiUtil.textColored(MetricColors.tps(lastServerInfo.tps()), String.valueOf(Math.round(lastServerInfo.tps() * 100.0f) / 100.0f));
 
-            ImGui.text("MSPT");
+            ImGui.textUnformatted("MSPT");
             ImGui.sameLine();
-            ImGui.textColored(MetricColors.mspt(lastServerInfo.mspt()), String.valueOf(Math.round(lastServerInfo.mspt() * 100.0f) / 100.0f));
+            ImGuiUtil.textColored(MetricColors.mspt(lastServerInfo.mspt()), String.valueOf(Math.round(lastServerInfo.mspt() * 100.0f) / 100.0f));
 
-            ImGui.text("Memory");
+            ImGui.textUnformatted("Memory");
             ImGui.sameLine();
-            ImGui.text(NumberUtils.formatMemorySize(lastServerInfo.memoryUsed()) + " / " + NumberUtils.formatMemorySize(lastServerInfo.memoryMax()));
+            ImGui.textUnformatted(NumberUtils.formatMemorySize(lastServerInfo.memoryUsed()) + " / " + NumberUtils.formatMemorySize(lastServerInfo.memoryMax()));
 
-            ImGui.text("Java");
+            ImGui.textUnformatted("Java");
             ImGui.sameLine();
-            ImGui.text(lastServerInfo.javaVersion());
-            ImGui.text("Host");
+            ImGui.textUnformatted(lastServerInfo.javaVersion());
+            ImGui.textUnformatted("Host");
             ImGui.sameLine();
-            ImGui.text(lastServerInfo.hostname());
-            ImGui.text("Players");
+            ImGui.textUnformatted(lastServerInfo.hostname());
+            ImGui.textUnformatted("Players");
             ImGui.sameLine();
-            ImGui.text(NumberUtils.format(lastServerInfo.onlinePlayers()));
-            ImGui.text("Logins");
+            ImGui.textUnformatted(NumberUtils.format(lastServerInfo.onlinePlayers()));
+            ImGui.textUnformatted("Logins");
             ImGui.sameLine();
-            ImGui.text(NumberUtils.format(lastServerInfo.logins()));
+            ImGui.textUnformatted(NumberUtils.format(lastServerInfo.logins()));
 
             GraphHistory.INSTANCE.ensureCapacity();
             GraphHistory.INSTANCE.pushServerMetrics(

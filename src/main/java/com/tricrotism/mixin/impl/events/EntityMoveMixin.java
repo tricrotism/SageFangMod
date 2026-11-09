@@ -19,6 +19,12 @@ public class EntityMoveMixin {
 
     @Inject(method = "move", at = @At("HEAD"))
     private void sagefang$onMove(MoverType moverType, Vec3 delta, CallbackInfo ci) {
-        SageFang.EVENT_BUS.post(EntityMoveEvent.get((Entity) (Object) this, delta));
+        // The integrated server moves its own entities on its own thread, and the event is a shared singleton.
+        if (!((Entity) (Object) this).level().isClientSide()) return;
+        try {
+            SageFang.EVENT_BUS.post(EntityMoveEvent.get((Entity) (Object) this, delta));
+        } finally {
+            EntityMoveEvent.release();
+        }
     }
 }

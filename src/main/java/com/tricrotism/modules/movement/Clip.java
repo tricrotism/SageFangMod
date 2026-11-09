@@ -74,6 +74,6 @@ public final class Clip extends Module {
 
     @Override
     protected void renderExtra(ImGuiIO io) {
-        ImGui.text("Ticks inside a block: " + ticksInside);
+        ImGui.textUnformatted("Ticks inside a block: " + ticksInside);
     }
 }

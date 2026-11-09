@@ -134,7 +134,7 @@ public class Blink extends Module {
                 toggle();
             }
 
-            ImGui.text("Queued: " + packetQueue.size());
+            ImGui.textUnformatted("Queued: " + packetQueue.size());
 
             ImGui.separator();
 

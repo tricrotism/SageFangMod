@@ -128,12 +128,12 @@ public final class InputReplay extends Module {
     @Override
     protected void renderExtra(ImGuiIO io) {
         if (intervals.isEmpty()) {
-            ImGui.text("No trace loaded (enable to load)");
+            ImGui.textUnformatted("No trace loaded (enable to load)");
             return;
         }
-        ImGui.text("Trace: " + intervals.size() + " intervals");
-        ImGui.text(String.format("Mean: %.1f ms | Deviation: %.2f ms",
+        ImGui.textUnformatted("Trace: " + intervals.size() + " intervals");
+        ImGui.textUnformatted(String.format("Mean: %.1f ms | Deviation: %.2f ms",
             InputTrace.mean(intervals), InputTrace.deviation(intervals)));
-        ImGui.text("Position: " + index + " | Attacks: " + attacks);
+        ImGui.textUnformatted("Position: " + index + " | Attacks: " + attacks);
     }
 }

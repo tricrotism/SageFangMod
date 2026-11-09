@@ -169,8 +169,8 @@ public class GhostBlock extends Module {
                 toggle();
             }
 
-            ImGui.text("Ghost blocks: " + ghostPositions.size());
-            ImGui.text("Undo history: " + history.size());
+            ImGui.textUnformatted("Ghost blocks: " + ghostPositions.size());
+            ImGui.textUnformatted("Undo history: " + history.size());
 
             ImGui.separatorText("Block");
             blockId.render();

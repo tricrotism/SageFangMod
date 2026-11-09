@@ -26,6 +26,7 @@ public final class TestLog {
 
     private static final Path DIRECTORY = Path.of("sagefang-testlog");
     private static final int FLUSH_EVERY = 50;
+    private static final long FLUSH_INTERVAL_NANOS = 1_000_000_000L;
 
     private static final long seed = resolveSeed();
     private static final long originNanos = System.nanoTime();
@@ -33,6 +34,7 @@ public final class TestLog {
 
     private static BufferedWriter writer;
     private static boolean failed;
+    private static long lastFlushNanos;
 
     private TestLog() {}
 
@@ -89,8 +91,11 @@ public final class TestLog {
             if (writer == null) open();
             writer.write(line);
             writer.newLine();
-            if (sinceFlush.incrementAndGet() >= FLUSH_EVERY) {
+            // A killed client never runs the shutdown hook, so flush at least once a second.
+            long now = System.nanoTime();
+            if (sinceFlush.incrementAndGet() >= FLUSH_EVERY || now - lastFlushNanos >= FLUSH_INTERVAL_NANOS) {
                 sinceFlush.set(0);
+                lastFlushNanos = now;
                 writer.flush();
             }
         } catch (IOException e) {
@@ -106,6 +111,8 @@ public final class TestLog {
             StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         writer.write("{\"t\":0,\"event\":\"session\",\"seed\":" + seed + "}");
         writer.newLine();
+        writer.flush();
+        lastFlushNanos = System.nanoTime();
         Runtime.getRuntime().addShutdownHook(new Thread(TestLog::close, "sagefang-testlog-close"));
         SageFang.LOGGER.info("Test log opened at {} (seed {})", file.toAbsolutePath(), seed);
     }

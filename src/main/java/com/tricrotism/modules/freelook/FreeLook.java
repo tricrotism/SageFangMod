@@ -136,7 +136,7 @@ public class FreeLook extends Module {
     @Override
     protected void renderExtra(ImGuiIO io) {
         if (isActive() && freeLookEngaged) {
-            ImGui.text(String.format("Yaw: %.1f  Pitch: %.1f", cameraYaw, cameraPitch));
+            ImGui.textUnformatted(String.format("Yaw: %.1f  Pitch: %.1f", cameraYaw, cameraPitch));
         }
         keybind.render();
     }

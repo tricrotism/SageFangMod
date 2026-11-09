@@ -8,6 +8,7 @@ import com.tricrotism.api.settings.Settings;
 import com.tricrotism.events.game.GameJoinedEvent;
 import com.tricrotism.events.game.GameQuitEvent;
 import com.tricrotism.events.world.TickEvent;
+import com.tricrotism.utils.ImGuiUtil;
 import com.tricrotism.utils.KeybindUtil;
 import com.tricrotism.utils.MessageUtils;
 import imgui.ImGui;
@@ -26,6 +27,8 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Intercepts, logs, delays, and allows manipulation of all network packets.
@@ -55,17 +58,27 @@ public class PacketManager extends Module {
 
     /**
      * When non-empty, only packets whose short name is in this set get delayed.
+     * <p>
+     * Copy-on-write rather than a {@code LinkedHashSet}: the menu edits it on the main thread while
+     * the send path reads it per packet, and that path is off-main whenever a flood worker or the
+     * ping scheduler is doing the sending. Insertion order is preserved, and the set is tiny and
+     * read-mostly, which is exactly this collection's shape.
      */
-    private final Set<String> delayFilter = new LinkedHashSet<>();
+    private final Set<String> delayFilter = new CopyOnWriteArraySet<>();
 
     private final Deque<PacketLogEntry> packetLog = new ArrayDeque<>();
     private static final int MAX_LOG = 200;
 
     /**
      * Distinct packet type names we've seen (for the selector UI).
+     * <p>
+     * Written from whichever thread sent or received the packet and walked by the menu on the main
+     * one. A {@code TreeSet} under that either throws a concurrent modification or, worse, walks a
+     * half-rebalanced tree forever. Sorted iteration is what the selector wants, so the concurrent
+     * sorted set is the direct replacement.
      */
-    private final Set<String> seenOutboundTypes = new TreeSet<>();
-    private final Set<String> seenInboundTypes = new TreeSet<>();
+    private final Set<String> seenOutboundTypes = new ConcurrentSkipListSet<>();
+    private final Set<String> seenInboundTypes = new ConcurrentSkipListSet<>();
 
     private static final Set<Class<?>> EXPECTED_PACKETS = Set.of(
         ClientboundLoginPacket.class,
@@ -258,21 +271,21 @@ public class PacketManager extends Module {
             if (ImGui.checkbox("Delay Outbound##pmDelayOut", delayOutbound.get()))
                 delayOutbound.set(!delayOutbound.get());
             ImGui.sameLine();
-            ImGui.text("(" + outboundQueue.size() + ")");
+            ImGui.textUnformatted("(" + outboundQueue.size() + ")");
 
             if (ImGui.checkbox("Log Packets##pmLog", logPackets.get())) logPackets.set(!logPackets.get());
 
             ImGui.separatorText("Delay Filter");
             if (delayFilter.isEmpty()) {
-                ImGui.textDisabled("All outbound packets delayed (no filter)");
+                ImGuiUtil.textDisabled("All outbound packets delayed (no filter)");
             } else {
-                ImGui.text("Only delaying " + delayFilter.size() + " packet type(s):");
+                ImGui.textUnformatted("Only delaying " + delayFilter.size() + " packet type(s):");
             }
 
             String toRemove = null;
             for (String entry : delayFilter) {
                 ImGui.pushStyleColor(ImGuiCol.Text, 1.0f, 0.75f, 0.55f, 1.0f);
-                ImGui.text("  " + entry);
+                ImGui.textUnformatted("  " + entry);
                 ImGui.popStyleColor();
                 ImGui.sameLine();
                 if (ImGui.smallButton("X##rmFilter_" + entry)) {
@@ -299,7 +312,7 @@ public class PacketManager extends Module {
                     }
                 }
                 if (seenOutboundTypes.isEmpty()) {
-                    ImGui.textDisabled("No outbound packets seen yet");
+                    ImGuiUtil.textDisabled("No outbound packets seen yet");
                 }
                 ImGui.endChild();
 
@@ -328,10 +341,10 @@ public class PacketManager extends Module {
                 int i = 0;
                 for (QueuedPacket qp : outboundQueue) {
                     long age = (System.currentTimeMillis() - qp.timestamp()) / 1000;
-                    ImGui.text(i + ": " + packetName(qp.packet()) + " (" + age + "s)");
+                    ImGui.textUnformatted(i + ": " + packetName(qp.packet()) + " (" + age + "s)");
                     i++;
                     if (i > 50) {
-                        ImGui.text("... +" + (outboundQueue.size() - 50) + " more");
+                        ImGui.textUnformatted("... +" + (outboundQueue.size() - 50) + " more");
                         break;
                     }
                 }
@@ -344,32 +357,34 @@ public class PacketManager extends Module {
 
             ImGui.beginChild("##pmLogChild", 400, 200, true, ImGuiWindowFlags.None);
             String filter = filterText.get().trim();
+
+            List<PacketLogEntry> logged;
             synchronized (packetLog) {
-                var it = packetLog.descendingIterator();
-                while (it.hasNext()) {
-                    PacketLogEntry entry = it.next();
-                    if (!filter.isEmpty() && !entry.name().toLowerCase().contains(filter.toLowerCase())) {
-                        continue;
-                    }
+                logged = List.copyOf(packetLog);
+            }
 
-                    boolean isOut = "OUT".equals(entry.direction());
-                    if (isOut) {
-                        ImGui.pushStyleColor(ImGuiCol.Text, 1.0f, 0.55f, 0.55f, 1.0f);
-                    } else {
-                        ImGui.pushStyleColor(ImGuiCol.Text, 0.75f, 0.75f, 0.90f, 1.0f);
-                    }
-                    ImGui.text(entry.direction() + " " + entry.name());
-                    ImGui.popStyleColor();
+            for (PacketLogEntry entry : logged.reversed()) {
+                if (!filter.isEmpty() && !entry.name().toLowerCase().contains(filter.toLowerCase())) {
+                    continue;
+                }
 
-                    if (isOut && ImGui.isItemHovered() && ImGui.isMouseClicked(1)) {
-                        if (!delayFilter.contains(entry.name())) {
-                            delayFilter.add(entry.name());
-                            persistDelayFilter();
-                        }
+                boolean isOut = "OUT".equals(entry.direction());
+                if (isOut) {
+                    ImGui.pushStyleColor(ImGuiCol.Text, 1.0f, 0.55f, 0.55f, 1.0f);
+                } else {
+                    ImGui.pushStyleColor(ImGuiCol.Text, 0.75f, 0.75f, 0.90f, 1.0f);
+                }
+                ImGui.textUnformatted(entry.direction() + " " + entry.name());
+                ImGui.popStyleColor();
+
+                if (isOut && ImGui.isItemHovered() && ImGui.isMouseClicked(1)) {
+                    if (!delayFilter.contains(entry.name())) {
+                        delayFilter.add(entry.name());
+                        persistDelayFilter();
                     }
-                    if (isOut && ImGui.isItemHovered()) {
-                        ImGui.setTooltip("Right-click to add to delay filter");
-                    }
+                }
+                if (isOut && ImGui.isItemHovered()) {
+                    ImGuiUtil.setTooltip("Right-click to add to delay filter");
                 }
             }
             ImGui.endChild();
